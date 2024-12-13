@@ -110,17 +110,20 @@ func (m Model) rollback() tea.Msg {
 	return rollbackMsg{err: nil}
 }
 
-func (m Model) upgrade() tea.Msg {
-
-	// Create the command
-	cmd := exec.Command("helm", "upgrade", m.releaseTable.SelectedRow()[0], m.historyTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
-
-	// Run the command
-	err := cmd.Run()
-	if err != nil {
-		return upgradeMsg{err}
+func (m Model) upgrade(chart string) tea.Cmd {
+	return func() tea.Msg {
+		// Create the command
+		cmd := exec.Command("helm", "upgrade", m.releaseTable.SelectedRow()[0], chart, "--namespace", m.releaseTable.SelectedRow()[1])
+		var stout bytes.Buffer
+		cmd.Stderr = &stout
+		// Run the command
+		err := cmd.Run()
+		fmt.Fprint(constants.LogFile, stout.String())
+		if err != nil {
+			return upgradeMsg{err}
+		}
+		return upgradeMsg{err: nil}
 	}
-	return upgradeMsg{err: nil}
 }
 
 func (m Model) getNotes() tea.Msg {
@@ -136,8 +139,6 @@ func (m Model) getNotes() tea.Msg {
 	if err != nil {
 		return notesMsg{err: err}
 	}
-
-	fmt.Fprint(constants.LogFile, stdout.String())
 
 	return notesMsg{content: stdout.String(), err: nil}
 }

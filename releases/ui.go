@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/table"
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -34,6 +35,7 @@ type Model struct {
 	hooksVP      viewport.Model
 	valuesVP     viewport.Model
 	manifestVP   viewport.Model
+	textInput    textinput.Model
 	width        int
 	height       int
 }
@@ -41,7 +43,8 @@ type Model struct {
 func InitModel() (tea.Model, tea.Cmd) {
 	t, h := generateTables()
 	k := generateKeys()
-	m := Model{releaseTable: t, historyTable: h, help: help.New(), keys: k}
+	ti := textinput.New()
+	m := Model{releaseTable: t, historyTable: h, help: help.New(), keys: k, textInput: ti}
 
 	m.releaseTable.Focus()
 	return m, nil
@@ -54,6 +57,25 @@ func (m Model) Init() tea.Cmd {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
+	if m.textInput.Focused() {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "enter":
+				cmd = m.upgrade(m.textInput.Value())
+				m.textInput.SetValue("")
+				m.textInput.Blur()
+				return m, cmd
+			case "esc":
+				m.textInput.SetValue("")
+				m.textInput.Blur()
+			}
+		}
+		m.textInput, cmd = m.textInput.Update(msg)
+		cmds = append(cmds, cmd)
+		return m, tea.Batch(cmds...)
+
+	}
 	switch m.selectedView {
 	case releasesView:
 		m.releaseTable.Focus()
@@ -100,6 +122,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.historyTable.SetCursor(0)
 		m.historyTable, cmd = m.historyTable.Update(msg)
 		cmds = append(cmds, cmd)
+	case upgradeMsg:
+		cmds = append(cmds, m.list)
+		m.selectedView = releasesView
 	case deleteMsg:
 		cmds = append(cmds, m.list)
 		m.releaseTable.SetCursor(0)
@@ -129,9 +154,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "?":
-			m.help.ShowAll = !m.help.ShowAll
-			return m, nil
 		case "r":
 			switch m.selectedView {
 			case releasesView:
@@ -145,10 +167,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "d":
 			return m, m.delete
 		case "u":
-			switch m.selectedView {
-			case releasesView:
-				return m, m.upgrade
-			}
+			m.textInput.Placeholder = "Enter a chart name or chart directory (absolute path)"
+			cmd = m.textInput.Focus()
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
+			// return m, m.upgrade
 		case "esc", "backspace":
 			switch m.selectedView {
 			case releasesView:
@@ -185,10 +208,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	header := m.renderReleasesTableView() + "\n" + m.menuView()
 	remainingHeight := m.height - lipgloss.Height(header) + lipgloss.Height(m.menuView()) - 2 - 1 // releaseTable padding + helper
+	if m.textInput.Focused() {
+		remainingHeight = remainingHeight - lipgloss.Height(m.textInput.View())
+	}
 	view := ""
 	switch m.selectedView {
 	case releasesView:
-		m.releaseTable.SetHeight(m.height - 2 - 1) // -2: releaseTable padding, -1: helper
+		tHeight := m.height - 2 - 1 // releaseTable padding + helper
+		if m.textInput.Focused() {
+			tHeight--
+		}
+		m.releaseTable.SetHeight(tHeight) // -2: releaseTable padding, -1: helper
 		view = m.renderReleasesTableView()
 	case historyView:
 		m.historyTable.SetHeight(remainingHeight - 2)
@@ -208,9 +238,12 @@ func (m Model) View() string {
 	case manifestView:
 		m.manifestVP.Height = remainingHeight - 4 // -4: 2*1 Padding + 2 borders
 		view = header + "\n" + m.renderManifestView()
-
 	}
-	return view + "\n" + m.help.View(m.keys[m.selectedView])
+	if m.textInput.Focused() {
+		view += "\n" + m.textInput.View()
+	}
+	helpView := m.help.View(m.keys[m.selectedView])
+	return view + "\n" + strings.Repeat(" ", m.width-lipgloss.Width(helpView)) + helpView
 }
 
 func (m Model) menuView() string {
@@ -248,58 +281,6 @@ func (m Model) menuView() string {
 	doc.WriteString(row + strings.Repeat("─", m.width-lipgloss.Width(row)-1) + styles.Border.TopRight)
 	return doc.String()
 }
-
-// func (m Model) ViewBak() string {
-// 	releasesTableView := m.renderReleasesTableView(false)
-// 	historyTableView := m.renderHistoryTableView(false)
-// 	notesViewportView := m.renderNotesView(false)
-// 	metadataViewportView := m.renderMetadataView(false)
-// 	hooksViewportView := m.renderHooksView(false)
-// 	valuesViewportView := m.renderValuesView(false)
-// 	templatesViewportView := m.renderManifestView(false)
-// 	switch m.selectedView {
-// 	case releasesView:
-// 		// remainingHeight := m.height - strings.Count(m.renderReleasesTableView(true), "\n")
-// 		// fmt.Fprint(constants.LogFile, remainingHeight, m.height, strings.Count(m.renderReleasesTableView(true), "\n"), "\n")
-// 		var t, t2, t3 string
-// 		for i := 0; i < m.releaseTable.Height()+3; i++ {
-// 			t3 += "j\n"
-// 		}
-// 		for i := 0; i < strings.Count(m.renderReleasesTableView(true), "\n"); i++ {
-// 			t += "i\n"
-// 		}
-// 		for i := 0; i < m.height; i++ {
-// 			t2 += "k\n"
-// 		}
-// 		// return lipgloss.JoinHorizontal(lipgloss.Left, t3, t2, t, m.renderReleasesTableView(true))
-// 		// return m.renderReleasesTableView(true) + "\n" + m.help.View(m.keys[m.selectedView])
-// 		return m.renderReleasesTableView(true)
-// 	case historyView:
-// 		historyTableView = m.renderHistoryTableView(true)
-// 	case notesView:
-// 		notesViewportView = m.renderNotesView(true)
-// 	case metadataView:
-// 		metadataViewportView = m.renderMetadataView(true)
-// 	case hooksView:
-// 		hooksViewportView = m.renderHooksView(true)
-// 	case valuesView:
-// 		valuesViewportView = m.renderValuesView(true)
-// 	case manifestView:
-// 		templatesViewportView = m.renderManifestView(true)
-// 	}
-// 	firstRow := releasesTableView
-// 	secondRow := historyTableView
-
-// 	notesMetadataBlock := lipgloss.JoinVertical(lipgloss.Left, notesViewportView, metadataViewportView)
-
-// 	thirdRow := lipgloss.JoinHorizontal(lipgloss.Left, notesMetadataBlock, hooksViewportView, valuesViewportView, templatesViewportView)
-
-// 	// remainingHeight := m.height - strings.Count(firstRow, "\n") - strings.Count(secondRow, "\n") - strings.Count(thirdRow, "\n")
-
-// 	return lipgloss.JoinVertical(lipgloss.Top, firstRow, secondRow, thirdRow)
-// 	// return lipgloss.JoinVertical(lipgloss.Top, firstRow, secondRow, thirdRow, m.help.View(m.keys[m.selectedView]))
-// 	// return lipgloss.JoinVertical(lipgloss.Top, firstRow, secondRow, thirdRow, strings.Repeat("\n", remainingHeight), m.help.View(m.keys[m.selectedView]))
-// }
 
 func (m Model) renderReleasesTableView() string {
 	var releasesTopBorder string
@@ -353,4 +334,12 @@ func (m Model) renderManifestView() string {
 	baseStyle := styles.InactiveStyle.Padding(1, 2).Border(styles.Border, false, true, true)
 	view = baseStyle.Render(view)
 	return view
+}
+
+func (m Model) SetHeight(height int) {
+	m.height = height
+}
+
+func (m Model) SetWidth(width int) {
+	m.width = width
 }

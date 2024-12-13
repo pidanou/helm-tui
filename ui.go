@@ -3,6 +3,7 @@ package main
 import (
 	"strings"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pidanou/helmtui/releases"
 	"github.com/pidanou/helmtui/styles"
@@ -36,7 +37,7 @@ func newModel(tabs []string) mainModel {
 }
 
 func (m mainModel) Init() tea.Cmd {
-	return m.tabContent[releasesTab].Init()
+	return tea.Batch(textinput.Blink, m.tabContent[releasesTab].Init())
 }
 
 func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -54,7 +55,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loaded = true
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q":
+		case "ctrl+c":
 			return m, tea.Quit
 		case "1":
 			m.state = releasesTab
@@ -76,8 +77,6 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch m.state {
 		case releasesTab:
 			m.tabContent[releasesTab], cmd = m.tabContent[releasesTab].Update(msg)
-			cmds = append(cmds, cmd)
-		default:
 			cmds = append(cmds, cmd)
 		}
 	}
