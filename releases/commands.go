@@ -188,8 +188,13 @@ func (m Model) getValues() tea.Msg {
 	if err != nil {
 		return types.ValuesMsg{Err: err}
 	}
+	lines := strings.Split(stdout.String(), "\n")
+	if len(lines) <= 1 {
+		return types.ValuesMsg{Err: errors.New("no history found")}
+	}
+	lines = lines[1:]
 
-	return types.ValuesMsg{Content: stdout.String(), Err: nil}
+	return types.ValuesMsg{Content: strings.Join(lines, "\n"), Err: nil}
 }
 
 func (m Model) getManifest() tea.Msg {
