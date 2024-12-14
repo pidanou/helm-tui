@@ -3,13 +3,12 @@ package releases
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/pidanou/helmtui/constants"
+	"github.com/pidanou/helmtui/types"
 )
 
 func (m Model) list() tea.Msg {
@@ -23,12 +22,12 @@ func (m Model) list() tea.Msg {
 	// Run the command
 	err := cmd.Run()
 	if err != nil {
-		return listMsg{err: err}
+		return types.ListReleasesMsg{Err: err}
 	}
 
 	lines := strings.Split(stdout.String(), "\n")
 	if len(lines) <= 1 {
-		return listMsg{content: releases}
+		return types.ListReleasesMsg{Content: releases}
 	}
 
 	// remove header and empty last line
@@ -43,14 +42,14 @@ func (m Model) list() tea.Msg {
 		remainingFields = append(remainingFields, fields[7:]...)
 		releases = append(releases, remainingFields)
 	}
-	return listMsg{content: releases, err: nil}
+	return types.ListReleasesMsg{Content: releases, Err: nil}
 }
 
 func (m *Model) history() tea.Msg {
 	var stdout bytes.Buffer
 
 	if m.releaseTable.SelectedRow() == nil {
-		return historyMsg{content: nil, err: errors.New("no release selected")}
+		return types.HistoryMsg{Content: nil, Err: errors.New("no release selected")}
 	}
 
 	// Create the command
@@ -60,12 +59,12 @@ func (m *Model) history() tea.Msg {
 	// Run the command
 	err := cmd.Run()
 	if err != nil {
-		return historyMsg{err: err}
+		return types.HistoryMsg{Err: err}
 	}
 
 	lines := strings.Split(stdout.String(), "\n")
 	if len(lines) <= 1 {
-		return historyMsg{err: errors.New("no history found")}
+		return types.HistoryMsg{Err: errors.New("no history found")}
 	}
 
 	// remove header and empty last line
@@ -81,7 +80,7 @@ func (m *Model) history() tea.Msg {
 		remainingFields = append(remainingFields, description)
 		history = append(history, remainingFields)
 	}
-	return historyMsg{content: history, err: nil}
+	return types.HistoryMsg{Content: history, Err: nil}
 }
 
 func (m *Model) delete() tea.Msg {
@@ -92,9 +91,9 @@ func (m *Model) delete() tea.Msg {
 	// Run the command
 	err := cmd.Run()
 	if err != nil {
-		return deleteMsg{err}
+		return types.DeleteMsg{Err: err}
 	}
-	return deleteMsg{err: nil}
+	return types.DeleteMsg{Err: nil}
 }
 
 func (m Model) rollback() tea.Msg {
@@ -105,9 +104,9 @@ func (m Model) rollback() tea.Msg {
 	// Run the command
 	err := cmd.Run()
 	if err != nil {
-		return rollbackMsg{err}
+		return types.RollbackMsg{Err: err}
 	}
-	return rollbackMsg{err: nil}
+	return types.RollbackMsg{Err: nil}
 }
 
 func (m Model) upgrade(chart string) tea.Cmd {
@@ -118,11 +117,10 @@ func (m Model) upgrade(chart string) tea.Cmd {
 		cmd.Stderr = &stout
 		// Run the command
 		err := cmd.Run()
-		fmt.Fprint(constants.LogFile, stout.String())
 		if err != nil {
-			return upgradeMsg{err}
+			return types.UpgradeMsg{Err: err}
 		}
-		return upgradeMsg{err: nil}
+		return types.UpgradeMsg{Err: nil}
 	}
 }
 
@@ -130,82 +128,82 @@ func (m Model) getNotes() tea.Msg {
 	var stdout bytes.Buffer
 
 	if m.releaseTable.SelectedRow() == nil {
-		return notesMsg{err: errors.New("no release selected")}
+		return types.NotesMsg{Err: errors.New("no release selected")}
 	}
 
 	cmd := exec.Command("helm", "get", "notes", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
 	cmd.Stdout = &stdout
 	err := cmd.Run()
 	if err != nil {
-		return notesMsg{err: err}
+		return types.NotesMsg{Err: err}
 	}
 
-	return notesMsg{content: stdout.String(), err: nil}
+	return types.NotesMsg{Content: stdout.String(), Err: nil}
 }
 
 func (m Model) getMetadata() tea.Msg {
 	var stdout bytes.Buffer
 
 	if m.releaseTable.SelectedRow() == nil {
-		return notesMsg{err: errors.New("no release selected")}
+		return types.NotesMsg{Err: errors.New("no release selected")}
 	}
 
 	cmd := exec.Command("helm", "get", "metadata", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
 	cmd.Stdout = &stdout
 	err := cmd.Run()
 	if err != nil {
-		return metadataMsg{err: err}
+		return types.MetadataMsg{Err: err}
 	}
 
-	return metadataMsg{content: stdout.String(), err: nil}
+	return types.MetadataMsg{Content: stdout.String(), Err: nil}
 }
 
 func (m Model) getHooks() tea.Msg {
 	var stdout bytes.Buffer
 
 	if m.releaseTable.SelectedRow() == nil {
-		return notesMsg{err: errors.New("no release selected")}
+		return types.HooksMsg{Err: errors.New("no release selected")}
 	}
 
 	cmd := exec.Command("helm", "get", "hooks", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
 	cmd.Stdout = &stdout
 	err := cmd.Run()
 	if err != nil {
-		return hooksMsg{err: err}
+		return types.HooksMsg{Err: err}
 	}
 
-	return hooksMsg{content: stdout.String(), err: nil}
+	return types.HooksMsg{Content: stdout.String(), Err: nil}
 }
 
 func (m Model) getValues() tea.Msg {
 	var stdout bytes.Buffer
 
 	if m.releaseTable.SelectedRow() == nil {
-		return notesMsg{err: errors.New("no release selected")}
+		return types.ValuesMsg{Err: errors.New("no release selected")}
 	}
 
 	cmd := exec.Command("helm", "get", "values", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
 	cmd.Stdout = &stdout
 	err := cmd.Run()
 	if err != nil {
-		return valuesMsg{err: err}
+		return types.ValuesMsg{Err: err}
 	}
 
-	return valuesMsg{content: stdout.String(), err: nil}
+	return types.ValuesMsg{Content: stdout.String(), Err: nil}
 }
 
 func (m Model) getManifest() tea.Msg {
 	var stdout bytes.Buffer
 
 	if m.releaseTable.SelectedRow() == nil {
-		return notesMsg{err: errors.New("no release selected")}
+		return types.ManifestMsg{Err: errors.New("no release selected")}
 	}
 
 	cmd := exec.Command("helm", "get", "manifest", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
 	cmd.Stdout = &stdout
 	err := cmd.Run()
 	if err != nil {
-		return templatesMsg{err: err}
+		return types.ManifestMsg{Err: err}
 	}
-	return templatesMsg{content: stdout.String(), err: nil}
+	return types.ManifestMsg{Content: stdout.String(), Err: nil}
 }

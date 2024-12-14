@@ -19,18 +19,8 @@ var (
 	InactiveTabStyle  = lipgloss.NewStyle().Border(InactiveTabBorder, true).Padding(0, 1)
 	ActiveTabStyle    = InactiveTabStyle.Border(ActiveTabBorder, true)
 	WindowSize        tea.WindowSizeMsg
-	Border            = lipgloss.Border(lipgloss.NormalBorder())
-	ThickBorder       = lipgloss.Border{
-		Top:         "━",
-		Bottom:      "━",
-		Left:        "┃",
-		Right:       "┃",
-		TopLeft:     "┏",
-		TopRight:    "┓",
-		BottomLeft:  "┗",
-		BottomRight: "┛",
-	}
-	HighlightColor = lipgloss.AdaptiveColor{Light: "#874BFD", Dark: "#7D56F4"}
-	InactiveStyle  = lipgloss.NewStyle()
-	ActiveStyle    = InactiveStyle.BorderForeground(HighlightColor)
+	Border            = lipgloss.Border(lipgloss.RoundedBorder())
+	HighlightColor    = lipgloss.AdaptiveColor{Light: "#874BFD", Dark: "#7D56F4"}
+	InactiveStyle     = lipgloss.NewStyle()
+	ActiveStyle       = InactiveStyle.BorderForeground(HighlightColor)
 )

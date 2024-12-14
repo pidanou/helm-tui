@@ -9,7 +9,9 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/pidanou/helmtui/components"
 	"github.com/pidanou/helmtui/styles"
+	"github.com/pidanou/helmtui/types"
 )
 
 type selectedView int
@@ -38,6 +40,55 @@ type Model struct {
 	textInput    textinput.Model
 	width        int
 	height       int
+}
+
+var releaseCols = []components.ColumnDefinition{
+	{Title: "Name", FlexFactor: 1},
+	{Title: "Namespace", FlexFactor: 1},
+	{Title: "Revision", Width: 10},
+	{Title: "Updated", Width: 36},
+	{Title: "Status", FlexFactor: 1},
+	{Title: "Chart", FlexFactor: 1},
+	{Title: "App version", FlexFactor: 1},
+}
+
+var historyCols = []components.ColumnDefinition{
+	{Title: "Revision", FlexFactor: 1},
+	{Title: "Updated", Width: 36},
+	{Title: "Status", FlexFactor: 1},
+	{Title: "Chart", FlexFactor: 1},
+	{Title: "App version", FlexFactor: 1},
+	{Title: "Description", FlexFactor: 1},
+}
+
+var releaseTableCache table.Model
+
+func generateTables() (table.Model, table.Model) {
+	t := table.New()
+	h := table.New()
+	s := table.DefaultStyles()
+	k := table.DefaultKeyMap()
+	k.HalfPageUp.Unbind()
+	k.PageDown.Unbind()
+	k.HalfPageDown.Unbind()
+	k.HalfPageDown.Unbind()
+	k.GotoBottom.Unbind()
+	k.GotoTop.Unbind()
+	s.Header = s.Header.
+		BorderStyle(styles.Border).
+		BorderForeground(lipgloss.Color("240")).
+		BorderBottom(true).
+		Bold(true)
+	s.Selected = s.Selected.
+		Foreground(lipgloss.Color("229")).
+		Background(lipgloss.Color("57")).
+		Bold(false)
+
+	t.SetStyles(s)
+	h.SetStyles(s)
+	t.KeyMap = k
+	h.KeyMap = k
+	return t, h
 }
 
 func InitModel() (tea.Model, tea.Cmd) {
@@ -78,7 +129,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	switch m.selectedView {
 	case releasesView:
-		m.releaseTable.Focus()
 		m.releaseTable, cmd = m.releaseTable.Update(msg)
 		cmds = append(cmds, cmd)
 	case historyView:
@@ -105,53 +155,58 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height // -6: remove the table padding and menu
-		m.setTable(&m.releaseTable, releaseCols, m.width, m.height)
-		m.setTable(&m.historyTable, historyCols, m.width, 7) // 7: 5 rows + 2 rows for the header
+		components.SetTable(&m.releaseTable, releaseCols, m.width)
+		components.SetTable(&m.historyTable, historyCols, m.width) // 7: 5 rows + 2 rows for the header
 		m.notesVP = viewport.New(m.width-6, 0)
 		m.metadataVP = viewport.New(m.width-6, 0)
 		m.hooksVP = viewport.New(m.width-6, 0)
 		m.valuesVP = viewport.New(m.width-6, 0)
 		m.manifestVP = viewport.New(m.width-6, 0)
 		m.help.Width = msg.Width
-	case listMsg:
-		m.releaseTable.SetRows(msg.content)
+	case types.ListReleasesMsg:
+		if m.selectedView == releasesView {
+			m.releaseTable.SetRows(msg.Content)
+		}
+		releaseTableCache = table.New(table.WithRows(msg.Content), table.WithColumns(m.releaseTable.Columns()))
 		m.releaseTable, cmd = m.releaseTable.Update(msg)
 		cmds = append(cmds, cmd, m.history, m.getNotes, m.getMetadata, m.getHooks, m.getValues, m.getManifest)
-	case historyMsg:
-		m.historyTable.SetRows(msg.content)
+	case types.HistoryMsg:
+		m.historyTable.SetRows(msg.Content)
 		m.historyTable.SetCursor(0)
 		m.historyTable, cmd = m.historyTable.Update(msg)
 		cmds = append(cmds, cmd)
-	case upgradeMsg:
+	case types.UpgradeMsg:
 		cmds = append(cmds, m.list)
 		m.selectedView = releasesView
-	case deleteMsg:
+	case types.DeleteMsg:
 		cmds = append(cmds, m.list)
 		m.releaseTable.SetCursor(0)
 		m.selectedView = releasesView
-	case rollbackMsg:
+	case types.RollbackMsg:
 		cmds = append(cmds, m.history)
 		m.historyTable.SetCursor(0)
-	case notesMsg:
-		m.notesVP.SetContent(msg.content)
+	case types.NotesMsg:
+		m.notesVP.SetContent(msg.Content)
 		m.notesVP, cmd = m.notesVP.Update(msg)
 		cmds = append(cmds, cmd)
-	case metadataMsg:
-		m.metadataVP.SetContent(msg.content)
+	case types.MetadataMsg:
+		m.metadataVP.SetContent(msg.Content)
 		m.metadataVP, cmd = m.metadataVP.Update(msg)
 		cmds = append(cmds, cmd)
-	case hooksMsg:
-		m.hooksVP.SetContent(msg.content)
+	case types.HooksMsg:
+		m.hooksVP.SetContent(msg.Content)
 		m.hooksVP, cmd = m.hooksVP.Update(msg)
 		cmds = append(cmds, cmd)
-	case valuesMsg:
-		m.valuesVP.SetContent(msg.content)
+	case types.ValuesMsg:
+		m.valuesVP.SetContent(msg.Content)
 		m.valuesVP, cmd = m.valuesVP.Update(msg)
 		cmds = append(cmds, cmd)
-	case templatesMsg:
-		m.manifestVP.SetContent(msg.content)
+	case types.ManifestMsg:
+		m.manifestVP.SetContent(msg.Content)
 		m.manifestVP, cmd = m.manifestVP.Update(msg)
 		cmds = append(cmds, cmd)
+	case types.InstallMsg:
+		cmds = append(cmds, m.list)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "r":
@@ -334,12 +389,4 @@ func (m Model) renderManifestView() string {
 	baseStyle := styles.InactiveStyle.Padding(1, 2).Border(styles.Border, false, true, true)
 	view = baseStyle.Render(view)
 	return view
-}
-
-func (m Model) SetHeight(height int) {
-	m.height = height
-}
-
-func (m Model) SetWidth(width int) {
-	m.width = width
 }
