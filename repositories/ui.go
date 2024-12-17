@@ -14,11 +14,19 @@ import (
 )
 
 type selectedView int
+type installStep int
 
 const (
 	listView selectedView = iota
 	packagesView
 	versionsView
+)
+
+const (
+	nameStep installStep = iota
+	namespaceStep
+	valuesStep
+	confirmStep
 )
 
 type Model struct {
@@ -27,10 +35,10 @@ type Model struct {
 	repositoriesTable table.Model
 	packagesTable     table.Model
 	versionsTable     table.Model
-	releaseNameInput  textinput.Model
-	namespaceInput    textinput.Model
+	inputs            []textinput.Model
 	help              help.Model
 	installing        bool
+	installStep       installStep
 	width             int
 	height            int
 }
@@ -91,21 +99,24 @@ func InitModel() (tea.Model, tea.Cmd) {
 	packagesTable.Focus()
 	versionsTable.Focus()
 	keys := generateKeys()
-	ti := textinput.New()
-	ns := textinput.New()
+	name := textinput.New()
+	namespace := textinput.New()
+	value := textinput.New()
+	confirm := textinput.New()
+	inputs := []textinput.Model{name, namespace, value, confirm}
 	m := Model{repositoriesTable: repoTable,
-		packagesTable:    packagesTable,
-		versionsTable:    versionsTable,
-		selectedView:     listView,
-		keys:             keys,
-		help:             help.New(),
-		releaseNameInput: ti,
-		namespaceInput:   ns,
-		installing:       false,
+		packagesTable: packagesTable,
+		versionsTable: versionsTable,
+		selectedView:  listView,
+		keys:          keys,
+		help:          help.New(),
+		inputs:        inputs,
+		installing:    false,
 	}
-	m.repositoriesTable.Focus()
-	m.releaseNameInput.Placeholder = "Enter release name"
-	m.namespaceInput.Placeholder = "Enter namespace (empty for default)"
+	m.inputs[nameStep].Placeholder = "Enter release name"
+	m.inputs[namespaceStep].Placeholder = "Enter namespace (empty for current)"
+	m.inputs[valuesStep].Placeholder = "Edit default values ? y/n"
+	m.inputs[confirmStep].Placeholder = "Enter to install"
 	return m, nil
 }
 
@@ -113,43 +124,73 @@ func (m Model) Init() tea.Cmd {
 	return m.list
 }
 
+func (m Model) handleInstallSteps(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	cmds := make([]tea.Cmd, len(m.inputs))
+	switch msg := msg.(type) {
+	case types.EditorFinishedMsg:
+		m.installStep++
+		for i := 0; i <= len(m.inputs)-1; i++ {
+			if i == int(m.installStep) {
+				cmds[i] = m.inputs[i].Focus()
+				continue
+			}
+			m.inputs[i].Blur()
+		}
+		return m, tea.Batch(cmds...)
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "enter":
+			if m.installStep == confirmStep {
+				cmd = m.blurAllInputs()
+				cmds = append(cmds, cmd)
+
+				cmd = m.installPackage()
+				cmds = append(cmds, cmd)
+				m.installing = false
+
+				return m, tea.Batch(cmds...)
+			}
+
+			if m.installStep == valuesStep {
+				switch m.inputs[valuesStep].Value() {
+				case "y":
+					return m, m.openEditorDefaultValues()
+				case "n":
+				}
+			}
+
+			m.installStep++
+
+			for i := 0; i <= len(m.inputs)-1; i++ {
+				if i == int(m.installStep) {
+					cmds[i] = m.inputs[i].Focus()
+					continue
+				}
+				m.inputs[i].Blur()
+			}
+
+			return m, tea.Batch(cmds...)
+		case "esc":
+			for i := 0; i <= len(m.inputs)-1; i++ {
+				m.inputs[i].Blur()
+				m.inputs[i].SetValue("")
+			}
+			m.installing = false
+		}
+	}
+	cmd = m.updateInputs(msg)
+	return m, cmd
+}
+
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	if m.installing {
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch msg.String() {
-			case "enter":
-				if m.releaseNameInput.Focused() {
-					m.releaseNameInput.Blur()
-					cmd = m.namespaceInput.Focus()
-					return m, cmd
-				} else if m.namespaceInput.Focused() {
-					cmd = m.installPackage(m.releaseNameInput.Value(), m.namespaceInput.Value())
-					cmds = append(cmds, cmd)
-					m.releaseNameInput.SetValue("")
-					m.releaseNameInput.Blur()
-					m.namespaceInput.SetValue("")
-					m.namespaceInput.Blur()
-					m.installing = false
-				}
-				return m, tea.Batch(cmds...)
-			case "esc":
-				m.releaseNameInput.SetValue("")
-				m.namespaceInput.SetValue("")
-				m.releaseNameInput.Blur()
-				m.namespaceInput.Blur()
-				m.installing = false
-			}
-		}
-		m.releaseNameInput, cmd = m.releaseNameInput.Update(msg)
-		cmds = append(cmds, cmd)
-		m.namespaceInput, cmd = m.namespaceInput.Update(msg)
-		cmds = append(cmds, cmd)
-		return m, tea.Batch(cmds...)
+		return m.handleInstallSteps(msg)
 	}
 
+	// handle table updates
 	switch m.selectedView {
 	case listView:
 		m.repositoriesTable, cmd = m.repositoriesTable.Update(msg)
@@ -161,6 +202,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.versionsTable, cmd = m.versionsTable.Update(msg)
 		cmds = append(cmds, cmd)
 	}
+
+	// handle messages
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -169,6 +212,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		components.SetTable(&m.packagesTable, packagesCols, m.width/4)
 		components.SetTable(&m.versionsTable, versionsCols, 2*m.width/4)
 		m.help.Width = msg.Width
+		m.inputs[nameStep].Width = msg.Width - 6
+		m.inputs[namespaceStep].Width = msg.Width - 6
 	case types.ListRepoMsg:
 		m.repositoriesTable.SetRows(msg.Content)
 		m.repositoriesTable, cmd = m.repositoriesTable.Update(msg)
@@ -185,14 +230,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.list)
 		m.repositoriesTable.SetCursor(0)
 		m.selectedView = listView
+	case types.InstallMsg:
+		m.cleanValueFile()
+		cmds = append(cmds, m.cleanValueFile)
+
+	// handle key presses
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "i":
 			m.installing = true
-			cmd = m.releaseNameInput.Focus()
+			m.installStep = nameStep
+			cmd = m.inputs[nameStep].Focus()
 			cmds = append(cmds, cmd)
-			return m, tea.Batch(cmds...)
-		case "down", "up":
+			// return m, tea.Batch(cmds...)
+		case "down", "up", "j", "k":
 			switch m.selectedView {
 			case listView:
 				cmds = append(cmds, m.searchPackages)
@@ -214,7 +265,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "R":
 			return m, m.remove
 		case "esc":
-			m.packagesTable.SetCursor(-1)
 			m.selectedView = listView
 		}
 	}
@@ -227,8 +277,18 @@ func (m Model) View() string {
 	packagesView := m.renderTable(m.packagesTable, " Packages ", m.selectedView == packagesView)
 	versionsView := m.renderTable(m.versionsTable, " Versions ", m.selectedView == versionsView)
 	view := lipgloss.JoinHorizontal(lipgloss.Top, repoView, packagesView, versionsView)
+	var inputs string
+	for step := 0; step < len(m.inputs); step++ {
+		if step == 0 {
+			inputs = m.inputs[step].View()
+			continue
+		}
+		inputs = lipgloss.JoinVertical(lipgloss.Top, inputs, m.inputs[step].View())
+	}
+	inputs = styles.ActiveStyle.Border(styles.Border).Render(inputs)
 	if m.installing {
-		view = lipgloss.JoinVertical(lipgloss.Top, view, m.releaseNameInput.View(), m.namespaceInput.View())
+		view = lipgloss.JoinVertical(lipgloss.Top, inputs)
+		return lipgloss.JoinVertical(lipgloss.Top, view, helpView)
 	}
 	return view + "\n" + strings.Repeat(" ", m.width-lipgloss.Width(helpView)) + helpView
 }
@@ -237,16 +297,35 @@ func (m Model) renderTable(table table.Model, title string, active bool) string 
 	var topBorder string
 	table.SetHeight(m.height - 3)
 	if m.installing {
-		table.SetHeight(m.height - 3 - lipgloss.Height(m.releaseNameInput.View()) - lipgloss.Height(m.namespaceInput.View()))
+		table.SetHeight(m.height - 3 - lipgloss.Height(m.inputs[nameStep].View()) - lipgloss.Height(m.inputs[namespaceStep].View()) - 2)
 	}
 	tableView := table.View()
 	var baseStyle lipgloss.Style
 	baseStyle = styles.InactiveStyle.Border(styles.Border, false, true, true)
 	topBorder = styles.GenerateTopBorderWithTitle(title, table.Width(), styles.Border, styles.InactiveStyle)
-	if active {
+	if active && !m.installing {
 		topBorder = styles.GenerateTopBorderWithTitle(title, table.Width(), styles.Border, styles.ActiveStyle.Foreground(styles.HighlightColor))
 		baseStyle = styles.ActiveStyle.Border(styles.Border, false, true, true)
 	}
 	tableView = baseStyle.Render(tableView)
 	return lipgloss.JoinVertical(lipgloss.Top, topBorder, tableView)
+}
+
+func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
+	cmds := make([]tea.Cmd, len(m.inputs))
+
+	// Only text inputs with Focus() set will respond, so it's safe to simply
+	// update all of them here without any further logic.
+	for i := range m.inputs {
+		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+	}
+
+	return tea.Batch(cmds...)
+}
+
+func (m Model) blurAllInputs() tea.Cmd {
+	for i := range m.inputs {
+		m.inputs[i].Blur()
+	}
+	return nil
 }

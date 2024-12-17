@@ -3,11 +3,13 @@ package repositories
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/pidanou/helmtui/helpers"
 	"github.com/pidanou/helmtui/types"
 )
 
@@ -127,20 +129,72 @@ func (m Model) searchPackageVersions() tea.Msg {
 	return types.PackageVersionsMsg{Content: releases, Err: nil}
 }
 
-func (m Model) installPackage(name, namespace string) tea.Cmd {
+func (m Model) installPackage() tea.Cmd {
+	releaseName := m.inputs[nameStep].Value()
+	namespace := m.inputs[namespaceStep].Value()
+	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
+	file := fmt.Sprintf("./%s/values.yaml", folder)
 	return func() tea.Msg {
-		var stdout bytes.Buffer
+		var stdout, stderr bytes.Buffer
 
+		var cmd *exec.Cmd
 		// Create the command
-		cmd := exec.Command("helm", "install", name, m.packagesTable.SelectedRow()[0], "--version", m.versionsTable.SelectedRow()[0], "--namespace", namespace, "--create-namespace")
+		if m.inputs[valuesStep].Value() == "y" {
+			cmd = exec.Command("helm", "install", releaseName, m.packagesTable.SelectedRow()[0], "--version", m.versionsTable.SelectedRow()[0], "--values", file, "--namespace", namespace, "--create-namespace")
+		} else {
+			cmd = exec.Command("helm", "install", releaseName, m.packagesTable.SelectedRow()[0], "--version", m.versionsTable.SelectedRow()[0], "--namespace", namespace, "--create-namespace")
+		}
 		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
 
 		// Run the command
 		err := cmd.Run()
+		helpers.Println(err, stderr.String())
 		if err != nil {
 			return types.InstallMsg{Err: err}
 		}
 
 		return types.InstallMsg{Err: nil}
 	}
+}
+
+func (m Model) openEditorDefaultValues() tea.Cmd {
+	var stdout, stderr bytes.Buffer
+	releaseName := m.inputs[nameStep].Value()
+	namespace := m.inputs[namespaceStep].Value()
+	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
+	file := fmt.Sprintf("./%s/values.yaml", folder)
+	packageName := m.packagesTable.SelectedRow()[0]
+	version := m.versionsTable.SelectedRow()[0]
+
+	_ = os.MkdirAll(folder, 0755)
+	cmd := exec.Command("helm", "show", "values", packageName, "--version", version)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		return func() tea.Msg { return types.EditorFinishedMsg{Err: err} }
+	}
+	err = os.WriteFile(file, stdout.Bytes(), 0644)
+	if err != nil {
+		return func() tea.Msg {
+			return types.EditorFinishedMsg{Err: err}
+		}
+	}
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "vim"
+	}
+	c := exec.Command(editor, file)
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		return types.EditorFinishedMsg{Err: err}
+	})
+}
+
+func (m Model) cleanValueFile() tea.Msg {
+	releaseName := m.inputs[nameStep].Value()
+	namespace := m.inputs[namespaceStep].Value()
+	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
+	_ = os.RemoveAll(folder)
+	return nil
 }

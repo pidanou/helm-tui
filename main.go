@@ -6,7 +6,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/pidanou/helmtui/constants"
+	"github.com/pidanou/helmtui/helpers"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 		fmt.Println("fatal:", err)
 		os.Exit(1)
 	}
-	constants.LogFile = f
+	helpers.LogFile = f
 	defer f.Close()
 	defer os.Truncate("debug.log", 0)
 

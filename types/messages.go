@@ -70,3 +70,7 @@ type PackageVersionsMsg struct {
 type InstallMsg struct {
 	Err error
 }
+
+type EditorFinishedMsg struct {
+	Err error
+}
