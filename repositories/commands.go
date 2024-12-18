@@ -46,6 +46,25 @@ func (m Model) list() tea.Msg {
 	return types.ListRepoMsg{Content: releases, Err: nil}
 }
 
+func (m Model) update() tea.Msg {
+	if m.repositoriesTable.SelectedRow() == nil {
+		return types.UpdateRepoMsg{Err: errors.New("no repo selected")}
+	}
+	var stdout bytes.Buffer
+
+	// Create the command
+	cmd := exec.Command("helm", "repo", "update", m.repositoriesTable.SelectedRow()[0])
+	cmd.Stdout = &stdout
+
+	// Run the command
+	err := cmd.Run()
+	if err != nil {
+		return types.UpdateRepoMsg{Err: err}
+	}
+
+	return types.UpdateRepoMsg{Err: nil}
+}
+
 func (m Model) remove() tea.Msg {
 	if m.repositoriesTable.SelectedRow() == nil {
 		return types.RemoveMsg{Err: errors.New("no repo selected")}

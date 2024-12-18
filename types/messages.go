@@ -78,3 +78,7 @@ type EditorFinishedMsg struct {
 type AddRepoMsg struct {
 	Err error
 }
+
+type UpdateRepoMsg struct {
+	Err error
+}

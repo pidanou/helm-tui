@@ -190,8 +190,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case types.InstallMsg:
 		m.installing = false
 	case types.AddRepoMsg:
-		helpers.Println("add repo")
 		m.adding = false
+		cmds = append(cmds, m.list)
+	case types.UpdateRepoMsg:
 		cmds = append(cmds, m.list)
 
 	// handle key presses
@@ -230,6 +231,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			default:
 				m.selectedView--
 			}
+		case "u":
+			return m, m.update
 		case "r":
 			return m, m.list
 		case "esc":
