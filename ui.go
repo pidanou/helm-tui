@@ -14,13 +14,11 @@ import (
 
 type tabIndex uint
 
-var tabLabels = []string{"Releases", "Repositories", "Chart", "Plugins"}
+var tabLabels = []string{"Releases", "Repositories"}
 
 const (
 	releasesTab tabIndex = iota
 	repositoriesTab
-	chartTab
-	pluginsTab
 )
 
 type mainModel struct {
@@ -41,7 +39,7 @@ func newModel(tabs []string) mainModel {
 }
 
 func (m mainModel) Init() tea.Cmd {
-	return tea.Batch(textinput.Blink, m.tabContent[releasesTab].Init())
+	return tea.Batch(textinput.Blink, m.tabContent[releasesTab].Init(), m.tabContent[repositoriesTab].Init())
 }
 
 func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -76,7 +74,6 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.state++
 			}
-			cmds = append(cmds, m.tabContent[m.state].Init())
 		}
 		switch m.state {
 		case releasesTab:

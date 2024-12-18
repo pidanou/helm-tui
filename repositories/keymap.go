@@ -13,12 +13,13 @@ type keyMap struct {
 	Update  key.Binding
 	Install key.Binding
 	Select  key.Binding
+	Cancel  key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
 // of the key.Map interface.
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Delete, k.Update, k.Move, k.Select, k.Refresh, k.Install}
+	return []key.Binding{k.Delete, k.Update, k.Move, k.Select, k.Refresh, k.Install, k.Cancel}
 }
 
 // FullHelp returns keybindings for the expanded help view. It's part of the
@@ -58,6 +59,10 @@ var versionsKeys = keyMap{
 	Move:    key.NewBinding(key.WithKeys("h", "	j", "k", "l", "left", "right", "up", "down"), key.WithHelp("hjkl/↑/↓/←/→", "Move")),
 	Update:  key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Upgrade repo")),
 	Install: key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install version")),
+}
+
+var installKeys = keyMap{
+	Cancel: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
 }
 
 func generateKeys() []keyMap {

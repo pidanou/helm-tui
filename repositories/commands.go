@@ -2,8 +2,8 @@ package repositories
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 
@@ -14,7 +14,7 @@ import (
 
 func (m Model) list() tea.Msg {
 	var stdout bytes.Buffer
-	var releases []table.Row
+	releases := []table.Row{}
 
 	// Create the command
 	cmd := exec.Command("helm", "repo", "update")
@@ -47,6 +47,9 @@ func (m Model) list() tea.Msg {
 }
 
 func (m Model) remove() tea.Msg {
+	if m.repositoriesTable.SelectedRow() == nil {
+		return types.RemoveMsg{Err: errors.New("no repo selected")}
+	}
 	var stdout bytes.Buffer
 
 	// Create the command
@@ -64,7 +67,10 @@ func (m Model) remove() tea.Msg {
 
 func (m Model) searchPackages() tea.Msg {
 	var stdout bytes.Buffer
-	var releases []table.Row
+	releases := []table.Row{}
+	if m.repositoriesTable.SelectedRow() == nil {
+		return types.PackagesMsg{Content: releases, Err: errors.New("no repo selected")}
+	}
 
 	// Create the command
 	cmd := exec.Command("helm", "search", "repo", fmt.Sprintf("%s/", m.repositoriesTable.SelectedRow()[0]))
@@ -73,7 +79,7 @@ func (m Model) searchPackages() tea.Msg {
 	// Run the command
 	err := cmd.Run()
 	if err != nil {
-		return types.PackagesMsg{Err: err}
+		return types.PackagesMsg{Content: releases, Err: err}
 	}
 
 	lines := strings.Split(stdout.String(), "\n")
@@ -96,7 +102,10 @@ func (m Model) searchPackages() tea.Msg {
 
 func (m Model) searchPackageVersions() tea.Msg {
 	var stdout bytes.Buffer
-	var releases []table.Row
+	releases := []table.Row{}
+	if m.packagesTable.SelectedRow() == nil {
+		return types.PackageVersionsMsg{Content: releases, Err: errors.New("no package selected")}
+	}
 
 	// Create the command
 	cmd := exec.Command("helm", "search", "repo", fmt.Sprintf("%s", m.packagesTable.SelectedRow()[0]), "--versions")
@@ -105,7 +114,7 @@ func (m Model) searchPackageVersions() tea.Msg {
 	// Run the command
 	err := cmd.Run()
 	if err != nil {
-		return types.PackageVersionsMsg{Err: err}
+		return types.PackageVersionsMsg{Content: releases, Err: err}
 	}
 
 	lines := strings.Split(stdout.String(), "\n")
@@ -126,82 +135,4 @@ func (m Model) searchPackageVersions() tea.Msg {
 		releases = append(releases, fields)
 	}
 	return types.PackageVersionsMsg{Content: releases, Err: nil}
-}
-
-func (m Model) installPackage() tea.Cmd {
-	releaseName := m.inputs[nameStep].Value()
-	namespace := m.inputs[namespaceStep].Value()
-	if namespace == "" {
-		namespace = "default"
-	}
-	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
-	file := fmt.Sprintf("./%s/values.yaml", folder)
-	return func() tea.Msg {
-		var stdout, stderr bytes.Buffer
-
-		var cmd *exec.Cmd
-		// Create the command
-		if m.inputs[valuesStep].Value() == "y" {
-			cmd = exec.Command("helm", "install", releaseName, m.packagesTable.SelectedRow()[0], "--version", m.versionsTable.SelectedRow()[0], "--values", file, "--namespace", namespace, "--create-namespace")
-		} else {
-			cmd = exec.Command("helm", "install", releaseName, m.packagesTable.SelectedRow()[0], "--version", m.versionsTable.SelectedRow()[0], "--namespace", namespace, "--create-namespace")
-		}
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-
-		// Run the command
-		err := cmd.Run()
-		if err != nil {
-			return types.InstallMsg{Err: err}
-		}
-
-		return types.InstallMsg{Err: nil}
-	}
-}
-
-func (m Model) openEditorDefaultValues() tea.Cmd {
-	var stdout, stderr bytes.Buffer
-	releaseName := m.inputs[nameStep].Value()
-	namespace := m.inputs[namespaceStep].Value()
-	if namespace == "" {
-		namespace = "default"
-	}
-	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
-	file := fmt.Sprintf("./%s/values.yaml", folder)
-	packageName := m.packagesTable.SelectedRow()[0]
-	version := m.versionsTable.SelectedRow()[0]
-
-	_ = os.MkdirAll(folder, 0755)
-	cmd := exec.Command("helm", "show", "values", packageName, "--version", version)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	if err != nil {
-		return func() tea.Msg { return types.EditorFinishedMsg{Err: err} }
-	}
-	err = os.WriteFile(file, stdout.Bytes(), 0644)
-	if err != nil {
-		return func() tea.Msg {
-			return types.EditorFinishedMsg{Err: err}
-		}
-	}
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		editor = "vim"
-	}
-	c := exec.Command(editor, file)
-	return tea.ExecProcess(c, func(err error) tea.Msg {
-		return types.EditorFinishedMsg{Err: err}
-	})
-}
-
-func (m Model) cleanValueFile() tea.Msg {
-	releaseName := m.inputs[nameStep].Value()
-	namespace := m.inputs[namespaceStep].Value()
-	if namespace == "" {
-		namespace = "default"
-	}
-	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
-	_ = os.RemoveAll(folder)
-	return nil
 }

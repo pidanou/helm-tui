@@ -74,3 +74,7 @@ type InstallMsg struct {
 type EditorFinishedMsg struct {
 	Err error
 }
+
+type AddRepoMsg struct {
+	Err error
+}
