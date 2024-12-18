@@ -76,19 +76,24 @@ func (m InstallModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Inputs[i].Blur()
 		}
 		return m, tea.Batch(cmds...)
+	case types.InstallMsg:
+		m.installStep = 0
+		releaseName := m.Inputs[nameStep].Value()
+		namespace := m.Inputs[namespaceStep].Value()
+		if namespace == "" {
+			namespace = "default"
+		}
+		folder := fmt.Sprintf("%s/%s", namespace, releaseName)
+		cmds = append(cmds, m.cleanValueFile(folder), m.blurAllInputs(), m.resetAllInputs())
+
+		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
 			if m.installStep == confirmStep {
 				m.installStep = 0
 
-				cmd = m.installPackage()
-				cmds = append(cmds, cmd)
-
-				cmd = m.blurAllInputs()
-				cmds = append(cmds, cmd)
-
-				cmd = m.resetAllInputs()
+				cmd = m.installPackage(m.Inputs[valuesStep].Value())
 				cmds = append(cmds, cmd)
 
 				return m, tea.Batch(cmds...)
@@ -167,7 +172,7 @@ func (m InstallModel) resetAllInputs() tea.Cmd {
 	return nil
 }
 
-func (m InstallModel) installPackage() tea.Cmd {
+func (m InstallModel) installPackage(mode string) tea.Cmd {
 	releaseName := m.Inputs[nameStep].Value()
 	namespace := m.Inputs[namespaceStep].Value()
 	if namespace == "" {
@@ -180,7 +185,7 @@ func (m InstallModel) installPackage() tea.Cmd {
 
 		var cmd *exec.Cmd
 		// Create the command
-		if m.Inputs[valuesStep].Value() == "y" {
+		if mode == "y" {
 			cmd = exec.Command("helm", "install", releaseName, m.Chart, "--version", m.Version, "--values", file, "--namespace", namespace, "--create-namespace")
 		} else {
 			cmd = exec.Command("helm", "install", releaseName, m.Chart, "--version", m.Version, "--namespace", namespace, "--create-namespace")
@@ -234,13 +239,9 @@ func (m InstallModel) openEditorDefaultValues() tea.Cmd {
 	})
 }
 
-func (m InstallModel) cleanValueFile() tea.Msg {
-	releaseName := m.Inputs[nameStep].Value()
-	namespace := m.Inputs[namespaceStep].Value()
-	if namespace == "" {
-		namespace = "default"
+func (m InstallModel) cleanValueFile(folder string) tea.Cmd {
+	return func() tea.Msg {
+		_ = os.RemoveAll(folder)
+		return nil
 	}
-	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
-	_ = os.RemoveAll(folder)
-	return nil
 }

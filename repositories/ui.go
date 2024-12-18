@@ -122,6 +122,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case types.InstallMsg:
 			m.installing = false
+			mod, cmd := m.installModel.Update(msg)
+			cmds = append(cmds, cmd)
+			m.installModel = mod.(InstallModel)
 			return m, cmd
 		}
 		mod, cmd := m.installModel.Update(msg)
