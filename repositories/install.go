@@ -80,13 +80,15 @@ func (m InstallModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "enter":
 			if m.installStep == confirmStep {
+				m.installStep = 0
+
+				cmd = m.installPackage()
+				cmds = append(cmds, cmd)
+
 				cmd = m.blurAllInputs()
 				cmds = append(cmds, cmd)
 
 				cmd = m.resetAllInputs()
-				cmds = append(cmds, cmd)
-
-				cmd = m.installPackage()
 				cmds = append(cmds, cmd)
 
 				return m, tea.Batch(cmds...)

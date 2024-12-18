@@ -1,13 +1,13 @@
 # Helmtui
 
+<img alt="Demo of Soramail" src="demos/overview.gif" width="1200" />
+
 Helmtui is a terminal-based UI application to manage your Helm releases, charts, repositories, and plugins with ease.
 
 ## Features
 
 - Manage Helm releases effortlessly.
-- Explore and manage Helm charts.
 - Add, update, and remove Helm repositories.
-- Install and manage Helm plugins.
 
 ## Requirements
 
