@@ -9,16 +9,17 @@ import (
 	"github.com/pidanou/helmtui/releases"
 	"github.com/pidanou/helmtui/repositories"
 	"github.com/pidanou/helmtui/styles"
+	"github.com/pidanou/helmtui/types"
 )
 
 type tabIndex uint
 
-var tabLabels = []string{"[1] releases", "[2] chart", "[3] repositories", "[4] plugins"}
+var tabLabels = []string{"Releases", "Repositories", "Chart", "Plugins"}
 
 const (
 	releasesTab tabIndex = iota
-	chartTab
 	repositoriesTab
+	chartTab
 	pluginsTab
 )
 
@@ -47,6 +48,17 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
+	case types.EditorFinishedMsg:
+		switch m.state {
+		case releasesTab:
+			m.tabContent[releasesTab], cmd = m.tabContent[releasesTab].Update(msg)
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
+		case repositoriesTab:
+			m.tabContent[repositoriesTab], cmd = m.tabContent[repositoriesTab].Update(msg)
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
+		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -58,15 +70,13 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
-		case "1":
-			m.state = releasesTab
-		// case "2":
-		// 	m.state = chart
-		case "3":
-			m.state = repositoriesTab
-			cmds = append(cmds, m.tabContent[repositoriesTab].Init())
-			// case "4":
-			// 	m.state = plugins
+		case "tab":
+			if m.state == repositoriesTab {
+				m.state = 0
+			} else {
+				m.state++
+			}
+			cmds = append(cmds, m.tabContent[m.state].Init())
 		}
 		switch m.state {
 		case releasesTab:
@@ -106,9 +116,9 @@ func (m mainModel) renderMenu() string {
 		var style lipgloss.Style
 		isActive := i == int(m.state)
 		if isActive {
-			style = styles.ActiveStyle.BorderStyle(styles.Border)
+			style = styles.ActiveStyle.Background(styles.HighlightColor).Padding(0, 1)
 		} else {
-			style = styles.InactiveStyle.BorderStyle(styles.Border)
+			style = styles.InactiveStyle.Padding(0, 1)
 		}
 		renderedTabs = append(renderedTabs, style.Render(t))
 	}

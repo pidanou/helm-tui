@@ -9,7 +9,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/pidanou/helmtui/helpers"
 	"github.com/pidanou/helmtui/types"
 )
 
@@ -132,6 +131,9 @@ func (m Model) searchPackageVersions() tea.Msg {
 func (m Model) installPackage() tea.Cmd {
 	releaseName := m.inputs[nameStep].Value()
 	namespace := m.inputs[namespaceStep].Value()
+	if namespace == "" {
+		namespace = "default"
+	}
 	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
 	file := fmt.Sprintf("./%s/values.yaml", folder)
 	return func() tea.Msg {
@@ -149,7 +151,6 @@ func (m Model) installPackage() tea.Cmd {
 
 		// Run the command
 		err := cmd.Run()
-		helpers.Println(err, stderr.String())
 		if err != nil {
 			return types.InstallMsg{Err: err}
 		}
@@ -162,6 +163,9 @@ func (m Model) openEditorDefaultValues() tea.Cmd {
 	var stdout, stderr bytes.Buffer
 	releaseName := m.inputs[nameStep].Value()
 	namespace := m.inputs[namespaceStep].Value()
+	if namespace == "" {
+		namespace = "default"
+	}
 	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
 	file := fmt.Sprintf("./%s/values.yaml", folder)
 	packageName := m.packagesTable.SelectedRow()[0]
@@ -194,6 +198,9 @@ func (m Model) openEditorDefaultValues() tea.Cmd {
 func (m Model) cleanValueFile() tea.Msg {
 	releaseName := m.inputs[nameStep].Value()
 	namespace := m.inputs[namespaceStep].Value()
+	if namespace == "" {
+		namespace = "default"
+	}
 	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
 	_ = os.RemoveAll(folder)
 	return nil

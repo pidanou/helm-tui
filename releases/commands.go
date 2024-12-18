@@ -3,6 +3,8 @@ package releases
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -109,19 +111,25 @@ func (m Model) rollback() tea.Msg {
 	return types.RollbackMsg{Err: nil}
 }
 
-func (m Model) upgrade(chart string) tea.Cmd {
-	return func() tea.Msg {
-		// Create the command
-		cmd := exec.Command("helm", "upgrade", m.releaseTable.SelectedRow()[0], chart, "--namespace", m.releaseTable.SelectedRow()[1])
-		var stout bytes.Buffer
-		cmd.Stderr = &stout
-		// Run the command
-		err := cmd.Run()
-		if err != nil {
-			return types.UpgradeMsg{Err: err}
-		}
-		return types.UpgradeMsg{Err: nil}
+func (m Model) upgrade() tea.Msg {
+	releaseName := m.releaseTable.SelectedRow()[0]
+	namespace := m.releaseTable.SelectedRow()[1]
+	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
+	file := fmt.Sprintf("./%s/values.yaml", folder)
+	var cmd *exec.Cmd
+	if m.inputs[valuesStep].Value() == "y" || m.inputs[valuesStep].Value() == "d" {
+		cmd = exec.Command("helm", "upgrade", m.releaseTable.SelectedRow()[0], m.inputs[chartStep].Value(), "--values", file, "--namespace", m.releaseTable.SelectedRow()[1])
+	} else {
+		cmd = exec.Command("helm", "upgrade", m.releaseTable.SelectedRow()[0], m.inputs[chartStep].Value(), "--namespace", m.releaseTable.SelectedRow()[1])
 	}
+	var stout bytes.Buffer
+	cmd.Stderr = &stout
+	// Run the command
+	err := cmd.Run()
+	if err != nil {
+		return types.UpgradeMsg{Err: err}
+	}
+	return types.UpgradeMsg{Err: nil}
 }
 
 func (m Model) getNotes() tea.Msg {
@@ -211,4 +219,76 @@ func (m Model) getManifest() tea.Msg {
 		return types.ManifestMsg{Err: err}
 	}
 	return types.ManifestMsg{Content: stdout.String(), Err: nil}
+}
+
+func (m Model) openEditorDefaultValues() tea.Cmd {
+	var stdout, stderr bytes.Buffer
+	releaseName := m.releaseTable.SelectedRow()[0]
+	namespace := m.releaseTable.SelectedRow()[1]
+	packageName := m.inputs[chartStep].Value()
+	version := m.inputs[versionStep].Value()
+	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
+	file := fmt.Sprintf("./%s/values.yaml", folder)
+
+	_ = os.MkdirAll(folder, 0755)
+	cmd := exec.Command("helm", "show", "values", packageName, "--version", version)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		return func() tea.Msg { return types.EditorFinishedMsg{Err: err} }
+	}
+	err = os.WriteFile(file, stdout.Bytes(), 0644)
+	if err != nil {
+		return func() tea.Msg {
+			return types.EditorFinishedMsg{Err: err}
+		}
+	}
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "vim"
+	}
+	c := exec.Command(editor, file)
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		return types.EditorFinishedMsg{Err: err}
+	})
+}
+
+func (m Model) openEditorLastValues() tea.Cmd {
+	var stdout, stderr bytes.Buffer
+	releaseName := m.releaseTable.SelectedRow()[0]
+	namespace := m.releaseTable.SelectedRow()[1]
+	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
+	file := fmt.Sprintf("./%s/values.yaml", folder)
+
+	_ = os.MkdirAll(folder, 0755)
+	cmd := exec.Command("helm", "get", "values", releaseName, "--namespace", namespace)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		return func() tea.Msg { return types.EditorFinishedMsg{Err: err} }
+	}
+	err = os.WriteFile(file, stdout.Bytes(), 0644)
+	if err != nil {
+		return func() tea.Msg {
+			return types.EditorFinishedMsg{Err: err}
+		}
+	}
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "vim"
+	}
+	c := exec.Command(editor, file)
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		return types.EditorFinishedMsg{Err: err}
+	})
+}
+
+func (m Model) cleanValueFile() tea.Msg {
+	releaseName := m.releaseTable.SelectedRow()[0]
+	namespace := m.releaseTable.SelectedRow()[1]
+	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
+	_ = os.RemoveAll(folder)
+	return nil
 }

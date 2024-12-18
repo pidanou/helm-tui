@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"strings"
+	"fmt"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/table"
@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/pidanou/helmtui/components"
+	"github.com/pidanou/helmtui/helpers"
 	"github.com/pidanou/helmtui/styles"
 	"github.com/pidanou/helmtui/types"
 )
@@ -56,6 +57,13 @@ var versionsCols = []components.ColumnDefinition{
 	{Title: "Chart Version", Width: 13},
 	{Title: "App Version", Width: 13},
 	{Title: "Description", FlexFactor: 1},
+}
+
+var inputsHelper = []string{
+	"Enter release name",
+	"Enter namespace (empty for default)",
+	"Edit default values ? y/n",
+	"Enter to install",
 }
 
 func generateTables() (table.Model, table.Model, table.Model) {
@@ -113,10 +121,6 @@ func InitModel() (tea.Model, tea.Cmd) {
 		inputs:        inputs,
 		installing:    false,
 	}
-	m.inputs[nameStep].Placeholder = "Enter release name"
-	m.inputs[namespaceStep].Placeholder = "Enter namespace (empty for current)"
-	m.inputs[valuesStep].Placeholder = "Edit default values ? y/n"
-	m.inputs[confirmStep].Placeholder = "Enter to install"
 	return m, nil
 }
 
@@ -157,6 +161,8 @@ func (m Model) handleInstallSteps(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case "y":
 					return m, m.openEditorDefaultValues()
 				case "n":
+				default:
+					return m, nil
 				}
 			}
 
@@ -172,6 +178,7 @@ func (m Model) handleInstallSteps(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return m, tea.Batch(cmds...)
 		case "esc":
+			m.installStep = 0
 			for i := 0; i <= len(m.inputs)-1; i++ {
 				m.inputs[i].Blur()
 				m.inputs[i].SetValue("")
@@ -212,8 +219,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		components.SetTable(&m.packagesTable, packagesCols, m.width/4)
 		components.SetTable(&m.versionsTable, versionsCols, 2*m.width/4)
 		m.help.Width = msg.Width
-		m.inputs[nameStep].Width = msg.Width - 6
-		m.inputs[namespaceStep].Width = msg.Width - 6
+		m.inputs[nameStep].Width = msg.Width - 6 - len(inputsHelper[0])
+		m.inputs[namespaceStep].Width = msg.Width - 6 - len(inputsHelper[1])
+		m.inputs[valuesStep].Width = msg.Width - 6 - len(inputsHelper[2])
+		m.inputs[confirmStep].Width = msg.Width - 6 - len(inputsHelper[3])
 	case types.ListRepoMsg:
 		m.repositoriesTable.SetRows(msg.Content)
 		m.repositoriesTable, cmd = m.repositoriesTable.Update(msg)
@@ -231,6 +240,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.repositoriesTable.SetCursor(0)
 		m.selectedView = listView
 	case types.InstallMsg:
+		m.installStep = 0
+		m.resetAllInputs()
 		m.cleanValueFile()
 		cmds = append(cmds, m.cleanValueFile)
 
@@ -280,17 +291,18 @@ func (m Model) View() string {
 	var inputs string
 	for step := 0; step < len(m.inputs); step++ {
 		if step == 0 {
-			inputs = m.inputs[step].View()
+			inputs = fmt.Sprintf("%s %s", inputsHelper[step], m.inputs[step].View())
 			continue
 		}
-		inputs = lipgloss.JoinVertical(lipgloss.Top, inputs, m.inputs[step].View())
+		inputs = lipgloss.JoinVertical(lipgloss.Top, inputs, fmt.Sprintf("%s %s", inputsHelper[step], m.inputs[step].View()))
 	}
 	inputs = styles.ActiveStyle.Border(styles.Border).Render(inputs)
 	if m.installing {
 		view = lipgloss.JoinVertical(lipgloss.Top, inputs)
 		return lipgloss.JoinVertical(lipgloss.Top, view, helpView)
 	}
-	return view + "\n" + strings.Repeat(" ", m.width-lipgloss.Width(helpView)) + helpView
+	helperStyle := m.help.Styles.ShortSeparator
+	return view + "\n" + helpView + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
 }
 
 func (m Model) renderTable(table table.Model, title string, active bool) string {
@@ -326,6 +338,13 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 func (m Model) blurAllInputs() tea.Cmd {
 	for i := range m.inputs {
 		m.inputs[i].Blur()
+	}
+	return nil
+}
+
+func (m Model) resetAllInputs() tea.Cmd {
+	for i := range m.inputs {
+		m.inputs[i].SetValue("")
 	}
 	return nil
 }

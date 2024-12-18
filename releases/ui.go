@@ -1,6 +1,7 @@
 package releases
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -10,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/pidanou/helmtui/components"
+	"github.com/pidanou/helmtui/helpers"
 	"github.com/pidanou/helmtui/styles"
 	"github.com/pidanou/helmtui/types"
 )
@@ -26,6 +28,13 @@ const (
 	manifestView
 )
 
+const (
+	chartStep int = iota
+	versionStep
+	valuesStep
+	confirmStep
+)
+
 type Model struct {
 	selectedView selectedView
 	keys         []keyMap
@@ -37,7 +46,9 @@ type Model struct {
 	hooksVP      viewport.Model
 	valuesVP     viewport.Model
 	manifestVP   viewport.Model
-	textInput    textinput.Model
+	inputs       []textinput.Model
+	upgradeStep  int
+	upgrading    bool
 	width        int
 	height       int
 }
@@ -59,6 +70,22 @@ var historyCols = []components.ColumnDefinition{
 	{Title: "Chart", FlexFactor: 1},
 	{Title: "App version", FlexFactor: 1},
 	{Title: "Description", FlexFactor: 1},
+}
+
+var menuItem = []string{
+	"History",
+	"Notes",
+	"Metadata",
+	"Hooks",
+	"Values",
+	"Manifest",
+}
+
+var inputsHelper = []string{
+	"Enter a chart name or chart directory (absolute path)",
+	"Version (empty for latest)",
+	"Edit values yes/no/use default ? y/n/d",
+	"Confirm ? enter/esc",
 }
 
 var releaseTableCache table.Model
@@ -94,8 +121,13 @@ func generateTables() (table.Model, table.Model) {
 func InitModel() (tea.Model, tea.Cmd) {
 	t, h := generateTables()
 	k := generateKeys()
-	ti := textinput.New()
-	m := Model{releaseTable: t, historyTable: h, help: help.New(), keys: k, textInput: ti}
+	var inputs []textinput.Model
+	chartInput := textinput.New()
+	versionInput := textinput.New()
+	valueInput := textinput.New()
+	confirmInput := textinput.New()
+	inputs = append(inputs, chartInput, versionInput, valueInput, confirmInput)
+	m := Model{releaseTable: t, historyTable: h, help: help.New(), keys: k, inputs: inputs, upgrading: false}
 
 	m.releaseTable.Focus()
 	return m, nil
@@ -105,27 +137,73 @@ func (m Model) Init() tea.Cmd {
 	return m.list
 }
 
+func (m Model) handleUpgradeSteps(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	cmds := make([]tea.Cmd, len(m.inputs))
+	switch msg := msg.(type) {
+	case types.EditorFinishedMsg:
+		m.upgradeStep++
+		for i := 0; i <= len(m.inputs)-1; i++ {
+			if i == int(m.upgradeStep) {
+				cmds[i] = m.inputs[i].Focus()
+				continue
+			}
+			m.inputs[i].Blur()
+		}
+		return m, tea.Batch(cmds...)
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "enter":
+			if m.upgradeStep == confirmStep {
+				cmd = m.blurAllInputs()
+				cmds = append(cmds, cmd, m.upgrade)
+
+				m.upgrading = false
+
+				return m, tea.Batch(cmds...)
+			}
+
+			if m.upgradeStep == valuesStep {
+				switch m.inputs[valuesStep].Value() {
+				case "d":
+					return m, m.openEditorDefaultValues()
+				case "n":
+				case "y":
+					return m, m.openEditorLastValues()
+				default:
+					return m, nil
+				}
+			}
+
+			m.upgradeStep++
+
+			for i := 0; i <= len(m.inputs)-1; i++ {
+				if i == int(m.upgradeStep) {
+					cmds[i] = m.inputs[i].Focus()
+					continue
+				}
+				m.inputs[i].Blur()
+			}
+
+			return m, tea.Batch(cmds...)
+		case "esc":
+			m.upgradeStep = 0
+			for i := 0; i <= len(m.inputs)-1; i++ {
+				m.inputs[i].Blur()
+				m.inputs[i].SetValue("")
+			}
+			m.upgrading = false
+		}
+	}
+	cmd = m.updateInputs(msg)
+	return m, cmd
+}
+
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
-	if m.textInput.Focused() {
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch msg.String() {
-			case "enter":
-				cmd = m.upgrade(m.textInput.Value())
-				m.textInput.SetValue("")
-				m.textInput.Blur()
-				return m, cmd
-			case "esc":
-				m.textInput.SetValue("")
-				m.textInput.Blur()
-			}
-		}
-		m.textInput, cmd = m.textInput.Update(msg)
-		cmds = append(cmds, cmd)
-		return m, tea.Batch(cmds...)
-
+	if m.upgrading {
+		return m.handleUpgradeSteps(msg)
 	}
 	switch m.selectedView {
 	case releasesView:
@@ -163,6 +241,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.valuesVP = viewport.New(m.width-6, 0)
 		m.manifestVP = viewport.New(m.width-6, 0)
 		m.help.Width = msg.Width
+		m.inputs[chartStep].Width = msg.Width - 6 - len(inputsHelper[0])
+		m.inputs[valuesStep].Width = msg.Width - 6 - len(inputsHelper[1])
 	case types.ListReleasesMsg:
 		if m.selectedView == releasesView {
 			m.releaseTable.SetRows(msg.Content)
@@ -176,6 +256,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.historyTable, cmd = m.historyTable.Update(msg)
 		cmds = append(cmds, cmd)
 	case types.UpgradeMsg:
+		m.upgradeStep = 0
+		m.resetAllInputs()
 		cmds = append(cmds, m.list)
 		m.selectedView = releasesView
 	case types.DeleteMsg:
@@ -207,6 +289,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	case types.InstallMsg:
 		cmds = append(cmds, m.list)
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "r":
@@ -222,12 +305,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "d":
 			return m, m.delete
 		case "u":
-			m.textInput.Placeholder = "Enter a chart name or chart directory (absolute path)"
-			cmd = m.textInput.Focus()
+			m.upgrading = true
+			cmd = m.inputs[chartStep].Focus()
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
 			// return m, m.upgrade
 		case "esc", "backspace":
+			m.upgrading = false
 			switch m.selectedView {
 			case releasesView:
 			default:
@@ -247,7 +331,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.historyTable.Focus()
 				cmds = append(cmds, m.history, m.getNotes, m.getMetadata, m.getHooks, m.getValues, m.getManifest)
 			}
-		case "tab":
+		case "right", "l":
 			switch m.selectedView {
 			case releasesView:
 			case manifestView:
@@ -255,61 +339,46 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			default:
 				m.selectedView++
 			}
+		case "left", "h":
+			switch m.selectedView {
+			case releasesView:
+			case historyView:
+				m.selectedView = manifestView
+			default:
+				m.selectedView--
+			}
 		}
 	}
 	return m, tea.Batch(cmds...)
 }
 
 func (m Model) View() string {
-	header := m.renderReleasesTableView() + "\n" + m.menuView()
-	remainingHeight := m.height - lipgloss.Height(header) + lipgloss.Height(m.menuView()) - 2 - 1 // releaseTable padding + helper
-	if m.textInput.Focused() {
-		remainingHeight = remainingHeight - lipgloss.Height(m.textInput.View())
-	}
-	view := ""
-	switch m.selectedView {
-	case releasesView:
-		tHeight := m.height - 2 - 1 // releaseTable padding + helper
-		if m.textInput.Focused() {
-			tHeight--
+	var view string
+	if !m.upgrading {
+		switch m.selectedView {
+		case releasesView:
+			tHeight := m.height - 2 - 1 // releaseTable padding + helper
+			m.releaseTable.SetHeight(tHeight)
+			view = m.renderReleasesTableView()
+		default:
+			view = m.renderReleaseDetail()
 		}
-		m.releaseTable.SetHeight(tHeight) // -2: releaseTable padding, -1: helper
-		view = m.renderReleasesTableView()
-	case historyView:
-		m.historyTable.SetHeight(remainingHeight - 2)
-		view = header + "\n" + m.renderHistoryTableView()
-	case notesView:
-		m.notesVP.Height = remainingHeight - 4
-		view = header + "\n" + m.renderNotesView()
-	case metadataView:
-		m.metadataVP.Height = remainingHeight - 4 // -4: 2*1 Padding + 2 borders
-		view = header + "\n" + m.renderMetadataView()
-	case hooksView:
-		m.hooksVP.Height = remainingHeight - 4 // -4: 2*1 Padding + 2 borders
-		view = header + "\n" + m.renderHooksView()
-	case valuesView:
-		m.valuesVP.Height = remainingHeight - 4 // -4: 2*1 Padding + 2 borders
-		view = header + "\n" + m.renderValuesView()
-	case manifestView:
-		m.manifestVP.Height = remainingHeight - 4 // -4: 2*1 Padding + 2 borders
-		view = header + "\n" + m.renderManifestView()
+	} else {
+		for step := 0; step < len(m.inputs); step++ {
+			if step == 0 {
+				view = fmt.Sprintf("%s %s", inputsHelper[step], m.inputs[step].View())
+				continue
+			}
+			view = lipgloss.JoinVertical(lipgloss.Top, view, fmt.Sprintf("%s %s", inputsHelper[step], m.inputs[step].View()))
+		}
+		view = styles.ActiveStyle.Border(styles.Border).Render(view)
 	}
-	if m.textInput.Focused() {
-		view += "\n" + m.textInput.View()
-	}
-	helpView := m.help.View(m.keys[m.selectedView])
-	return view + "\n" + strings.Repeat(" ", m.width-lipgloss.Width(helpView)) + helpView
+	helperStyle := m.help.Styles.ShortSeparator
+	helpView := m.help.View(m.keys[m.selectedView]) + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
+	return view + "\n" + helpView
 }
 
 func (m Model) menuView() string {
-	menuItem := []string{
-		"History",
-		"Notes",
-		"Metadata",
-		"Hooks",
-		"Values",
-		"Manifest",
-	}
 	doc := strings.Builder{}
 
 	var renderedTabs []string
@@ -335,6 +404,33 @@ func (m Model) menuView() string {
 	row := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
 	doc.WriteString(row + strings.Repeat("─", m.width-lipgloss.Width(row)-1) + styles.Border.TopRight)
 	return doc.String()
+}
+
+func (m Model) renderReleaseDetail() string {
+	header := m.renderReleasesTableView() + "\n" + m.menuView()
+	remainingHeight := m.height - lipgloss.Height(header) + lipgloss.Height(m.menuView()) - 2 - 1 // releaseTable padding + helper
+	var view string
+	switch m.selectedView {
+	case historyView:
+		m.historyTable.SetHeight(remainingHeight - 2)
+		view = header + "\n" + m.renderHistoryTableView()
+	case notesView:
+		m.notesVP.Height = remainingHeight - 4
+		view = header + "\n" + m.renderNotesView()
+	case metadataView:
+		m.metadataVP.Height = remainingHeight - 4 // -4: 2*1 Padding + 2 borders
+		view = header + "\n" + m.renderMetadataView()
+	case hooksView:
+		m.hooksVP.Height = remainingHeight - 4 // -4: 2*1 Padding + 2 borders
+		view = header + "\n" + m.renderHooksView()
+	case valuesView:
+		m.valuesVP.Height = remainingHeight - 4 // -4: 2*1 Padding + 2 borders
+		view = header + "\n" + m.renderValuesView()
+	case manifestView:
+		m.manifestVP.Height = remainingHeight - 4 // -4: 2*1 Padding + 2 borders
+		view = header + "\n" + m.renderManifestView()
+	}
+	return view
 }
 
 func (m Model) renderReleasesTableView() string {
@@ -389,4 +485,30 @@ func (m Model) renderManifestView() string {
 	baseStyle := styles.InactiveStyle.Padding(1, 2).Border(styles.Border, false, true, true)
 	view = baseStyle.Render(view)
 	return view
+}
+
+func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
+	cmds := make([]tea.Cmd, len(m.inputs))
+
+	// Only text inputs with Focus() set will respond, so it's safe to simply
+	// update all of them here without any further logic.
+	for i := range m.inputs {
+		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+	}
+
+	return tea.Batch(cmds...)
+}
+
+func (m Model) blurAllInputs() tea.Cmd {
+	for i := range m.inputs {
+		m.inputs[i].Blur()
+	}
+	return nil
+}
+
+func (m Model) resetAllInputs() tea.Cmd {
+	for i := range m.inputs {
+		m.inputs[i].SetValue("")
+	}
+	return nil
 }

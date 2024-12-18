@@ -10,7 +10,6 @@ type keyMap struct {
 	Delete  key.Binding
 	Refresh key.Binding
 	Move    key.Binding
-	Quit    key.Binding
 	Update  key.Binding
 	Install key.Binding
 	Select  key.Binding
@@ -19,7 +18,7 @@ type keyMap struct {
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
 // of the key.Map interface.
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Delete, k.Update, k.Move, k.Select, k.Refresh, k.Install, k.Quit}
+	return []key.Binding{k.Delete, k.Update, k.Move, k.Select, k.Refresh, k.Install}
 }
 
 // FullHelp returns keybindings for the expanded help view. It's part of the
@@ -37,7 +36,6 @@ var repoListKeys = keyMap{
 	Refresh: key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "Refresh")),
 	Select:  key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "Select")),
 	Update:  key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Update repo")),
-	Quit:    key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "Quit")),
 	Install: key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install version")),
 }
 
@@ -49,7 +47,6 @@ var chartsListKeys = keyMap{
 	Move:    key.NewBinding(key.WithKeys("h", "	j", "k", "l", "left", "right", "up", "down"), key.WithHelp("hjkl/↑/↓/←/→", "Move")),
 	Select:  key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "Select")),
 	Update:  key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Update repo")),
-	Quit:    key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "Quit")),
 	Install: key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install version")),
 }
 
@@ -60,7 +57,6 @@ var versionsKeys = keyMap{
 	),
 	Move:    key.NewBinding(key.WithKeys("h", "	j", "k", "l", "left", "right", "up", "down"), key.WithHelp("hjkl/↑/↓/←/→", "Move")),
 	Update:  key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Upgrade repo")),
-	Quit:    key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "Quit")),
 	Install: key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install version")),
 }
 
