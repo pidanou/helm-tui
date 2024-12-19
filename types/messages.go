@@ -2,6 +2,10 @@ package types
 
 import "github.com/charmbracelet/bubbles/table"
 
+type InitAppMsg struct {
+	Err error
+}
+
 type DeleteMsg struct {
 	Err error
 }

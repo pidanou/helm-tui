@@ -10,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/pidanou/helmtui/helpers"
 	"github.com/pidanou/helmtui/types"
 )
 
@@ -114,8 +115,9 @@ func (m Model) rollback() tea.Msg {
 func (m Model) upgrade() tea.Msg {
 	releaseName := m.releaseTable.SelectedRow()[0]
 	namespace := m.releaseTable.SelectedRow()[1]
-	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
-	file := fmt.Sprintf("./%s/values.yaml", folder)
+	folder := fmt.Sprintf("%s/%s/%s", helpers.UserDir, namespace, releaseName)
+	_ = os.MkdirAll(folder, 0755)
+	file := fmt.Sprintf("%s/values.yaml", folder)
 	var cmd *exec.Cmd
 	if m.inputs[valuesStep].Value() == "y" || m.inputs[valuesStep].Value() == "d" {
 		cmd = exec.Command("helm", "upgrade", m.releaseTable.SelectedRow()[0], m.inputs[chartStep].Value(), "--values", file, "--namespace", m.releaseTable.SelectedRow()[1])
@@ -227,10 +229,10 @@ func (m Model) openEditorDefaultValues() tea.Cmd {
 	namespace := m.releaseTable.SelectedRow()[1]
 	packageName := m.inputs[chartStep].Value()
 	version := m.inputs[versionStep].Value()
-	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
-	file := fmt.Sprintf("./%s/values.yaml", folder)
-
+	folder := fmt.Sprintf("%s/%s/%s", helpers.UserDir, namespace, releaseName)
 	_ = os.MkdirAll(folder, 0755)
+	file := fmt.Sprintf("%s/values.yaml", folder)
+
 	cmd := exec.Command("helm", "show", "values", packageName, "--version", version)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -258,10 +260,10 @@ func (m Model) openEditorLastValues() tea.Cmd {
 	var stdout, stderr bytes.Buffer
 	releaseName := m.releaseTable.SelectedRow()[0]
 	namespace := m.releaseTable.SelectedRow()[1]
-	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
-	file := fmt.Sprintf("./%s/values.yaml", folder)
-
+	folder := fmt.Sprintf("%s/%s/%s", helpers.UserDir, namespace, releaseName)
 	_ = os.MkdirAll(folder, 0755)
+	file := fmt.Sprintf("%s/values.yaml", folder)
+
 	cmd := exec.Command("helm", "get", "values", releaseName, "--namespace", namespace)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -283,12 +285,4 @@ func (m Model) openEditorLastValues() tea.Cmd {
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		return types.EditorFinishedMsg{Err: err}
 	})
-}
-
-func (m Model) cleanValueFile() tea.Msg {
-	releaseName := m.releaseTable.SelectedRow()[0]
-	namespace := m.releaseTable.SelectedRow()[1]
-	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
-	_ = os.RemoveAll(folder)
-	return nil
 }

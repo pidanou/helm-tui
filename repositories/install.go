@@ -78,13 +78,7 @@ func (m InstallModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	case types.InstallMsg:
 		m.installStep = 0
-		releaseName := m.Inputs[nameStep].Value()
-		namespace := m.Inputs[namespaceStep].Value()
-		if namespace == "" {
-			namespace = "default"
-		}
-		folder := fmt.Sprintf("%s/%s", namespace, releaseName)
-		cmds = append(cmds, m.cleanValueFile(folder), m.blurAllInputs(), m.resetAllInputs())
+		cmds = append(cmds, m.blurAllInputs(), m.resetAllInputs())
 
 		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
@@ -178,8 +172,8 @@ func (m InstallModel) installPackage(mode string) tea.Cmd {
 	if namespace == "" {
 		namespace = "default"
 	}
-	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
-	file := fmt.Sprintf("./%s/values.yaml", folder)
+	folder := fmt.Sprintf("%s/%s/%s", helpers.UserDir, namespace, releaseName)
+	file := fmt.Sprintf("%s/values.yaml", folder)
 	return func() tea.Msg {
 		var stdout, stderr bytes.Buffer
 
@@ -210,12 +204,12 @@ func (m InstallModel) openEditorDefaultValues() tea.Cmd {
 	if namespace == "" {
 		namespace = "default"
 	}
-	folder := fmt.Sprintf("%s/%s", namespace, releaseName)
-	file := fmt.Sprintf("./%s/values.yaml", folder)
+	folder := fmt.Sprintf("%s/%s/%s", helpers.UserDir, namespace, releaseName)
+	_ = os.MkdirAll(folder, 0755)
+	file := fmt.Sprintf("%s/values.yaml", folder)
 	packageName := m.Chart
 	version := m.Version
 
-	_ = os.MkdirAll(folder, 0755)
 	cmd := exec.Command("helm", "show", "values", packageName, "--version", version)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -237,11 +231,4 @@ func (m InstallModel) openEditorDefaultValues() tea.Cmd {
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		return types.EditorFinishedMsg{Err: err}
 	})
-}
-
-func (m InstallModel) cleanValueFile(folder string) tea.Cmd {
-	return func() tea.Msg {
-		_ = os.RemoveAll(folder)
-		return nil
-	}
 }

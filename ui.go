@@ -1,11 +1,14 @@
 package main
 
 import (
+	"os"
+	"path"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/pidanou/helmtui/helpers"
 	"github.com/pidanou/helmtui/releases"
 	"github.com/pidanou/helmtui/repositories"
 	"github.com/pidanou/helmtui/styles"
@@ -39,13 +42,18 @@ func newModel(tabs []string) mainModel {
 }
 
 func (m mainModel) Init() tea.Cmd {
-	return tea.Batch(textinput.Blink, m.tabContent[releasesTab].Init(), m.tabContent[repositoriesTab].Init())
+	return tea.Batch(createWorkingDir, textinput.Blink, m.tabContent[releasesTab].Init(), m.tabContent[repositoriesTab].Init())
 }
 
 func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
+	case types.InitAppMsg:
+		if msg.Err != nil {
+			return m, tea.Quit
+		}
+		m.loaded = true
 	case types.EditorFinishedMsg:
 		switch m.state {
 		case releasesTab:
@@ -62,7 +70,6 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.tabContent[releasesTab], cmd = m.tabContent[releasesTab].Update(tea.WindowSizeMsg{Width: m.width, Height: msg.Height - lipgloss.Height(m.renderMenu())})
 		m.tabContent[repositoriesTab], cmd = m.tabContent[repositoriesTab].Update(tea.WindowSizeMsg{Width: m.width, Height: msg.Height - lipgloss.Height(m.renderMenu())})
-		m.loaded = true
 		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -122,4 +129,18 @@ func (m mainModel) renderMenu() string {
 	menu := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
 	doc.WriteString(menu)
 	return doc.String()
+}
+
+func createWorkingDir() tea.Msg {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return types.InitAppMsg{Err: err}
+	}
+	workingDir := path.Join(homeDir, ".helmtui")
+	err = os.MkdirAll(workingDir, 0755)
+	if err != nil {
+		return types.InitAppMsg{Err: err}
+	}
+	helpers.UserDir = workingDir
+	return types.InitAppMsg{Err: nil}
 }
