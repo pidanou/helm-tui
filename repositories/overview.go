@@ -223,7 +223,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case packagesView:
 				cmds = append(cmds, m.searchPackageVersions)
 			}
-		case "right", "l", "enter":
+		case "tab", "l", "enter":
 			switch m.selectedView {
 			case versionsView:
 			default:
@@ -231,7 +231,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "d":
 			cmds = append(cmds, m.remove)
-		case "left", "h":
+		case "shift+tab", "h":
 			switch m.selectedView {
 			case listView:
 			default:
