@@ -45,7 +45,7 @@ func (m AddModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m AddModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m AddModel) Update(msg tea.Msg) (AddModel, tea.Cmd) {
 	var cmd tea.Cmd
 	cmds := make([]tea.Cmd, len(m.Inputs))
 	switch msg := msg.(type) {

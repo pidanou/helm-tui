@@ -74,6 +74,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
+			cleanup()
 			return m, tea.Quit
 		case "tab":
 			if m.state == repositoriesTab {
@@ -143,4 +144,8 @@ func createWorkingDir() tea.Msg {
 	}
 	helpers.UserDir = workingDir
 	return types.InitAppMsg{Err: nil}
+}
+
+func cleanup() {
+	_ = os.RemoveAll(helpers.UserDir)
 }

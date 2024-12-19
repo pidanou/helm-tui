@@ -1,12 +1,13 @@
 package releases
 
 import (
-	"fmt"
+	"bytes"
+	"errors"
+	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/table"
-	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -28,13 +29,6 @@ const (
 	manifestView
 )
 
-const (
-	chartStep int = iota
-	versionStep
-	valuesStep
-	confirmStep
-)
-
 type Model struct {
 	selectedView selectedView
 	keys         []keyMap
@@ -46,8 +40,9 @@ type Model struct {
 	hooksVP      viewport.Model
 	valuesVP     viewport.Model
 	manifestVP   viewport.Model
-	inputs       []textinput.Model
-	upgradeStep  int
+	installModel InstallModel
+	installing   bool
+	upgradeModel UpgradeModel
 	upgrading    bool
 	width        int
 	height       int
@@ -79,13 +74,6 @@ var menuItem = []string{
 	"Hooks",
 	"Values",
 	"Manifest",
-}
-
-var inputsHelper = []string{
-	"Enter a chart name or chart directory (absolute path)",
-	"Version (empty for latest)",
-	"Edit values yes/no/use default ? y/n/d",
-	"Confirm ? enter/esc",
 }
 
 var releaseTableCache table.Model
@@ -121,13 +109,9 @@ func generateTables() (table.Model, table.Model) {
 func InitModel() (tea.Model, tea.Cmd) {
 	t, h := generateTables()
 	k := generateKeys()
-	var inputs []textinput.Model
-	chartInput := textinput.New()
-	versionInput := textinput.New()
-	valueInput := textinput.New()
-	confirmInput := textinput.New()
-	inputs = append(inputs, chartInput, versionInput, valueInput, confirmInput)
-	m := Model{releaseTable: t, historyTable: h, help: help.New(), keys: k, inputs: inputs, upgrading: false}
+	m := Model{releaseTable: t, historyTable: h, help: help.New(), keys: k, upgrading: false,
+		installModel: InitInstallModel(), installing: false, upgradeModel: InitUpgradeModel(),
+	}
 
 	m.releaseTable.Focus()
 	return m, nil
@@ -137,73 +121,46 @@ func (m Model) Init() tea.Cmd {
 	return m.list
 }
 
-func (m Model) handleUpgradeSteps(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	cmds := make([]tea.Cmd, len(m.inputs))
-	switch msg := msg.(type) {
-	case types.EditorFinishedMsg:
-		m.upgradeStep++
-		for i := 0; i <= len(m.inputs)-1; i++ {
-			if i == int(m.upgradeStep) {
-				cmds[i] = m.inputs[i].Focus()
-				continue
-			}
-			m.inputs[i].Blur()
-		}
-		return m, tea.Batch(cmds...)
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "enter":
-			if m.upgradeStep == confirmStep {
-				cmd = m.blurAllInputs()
-				cmds = append(cmds, cmd, m.upgrade)
-
-				m.upgrading = false
-
-				return m, tea.Batch(cmds...)
-			}
-
-			if m.upgradeStep == valuesStep {
-				switch m.inputs[valuesStep].Value() {
-				case "d":
-					return m, m.openEditorDefaultValues()
-				case "n":
-				case "y":
-					return m, m.openEditorLastValues()
-				default:
-					return m, nil
-				}
-			}
-
-			m.upgradeStep++
-
-			for i := 0; i <= len(m.inputs)-1; i++ {
-				if i == int(m.upgradeStep) {
-					cmds[i] = m.inputs[i].Focus()
-					continue
-				}
-				m.inputs[i].Blur()
-			}
-
-			return m, tea.Batch(cmds...)
-		case "esc":
-			m.upgradeStep = 0
-			for i := 0; i <= len(m.inputs)-1; i++ {
-				m.inputs[i].Blur()
-				m.inputs[i].SetValue("")
-			}
-			m.upgrading = false
-		}
-	}
-	cmd = m.updateInputs(msg)
-	return m, cmd
-}
-
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
+	if m.installing {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			if msg.String() == "esc" {
+				m.installing = false
+			}
+			m.installModel, cmd = m.installModel.Update(msg)
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
+		case types.InstallMsg:
+			m.installing = false
+			m.installModel, cmd = m.installModel.Update(msg)
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
+		}
+		m.installModel, cmd = m.installModel.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 	if m.upgrading {
-		return m.handleUpgradeSteps(msg)
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			if msg.String() == "esc" {
+				m.upgrading = false
+			}
+			m.upgradeModel, cmd = m.upgradeModel.Update(msg)
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
+		case types.UpgradeMsg:
+			m.upgrading = false
+			m.upgradeModel, cmd = m.upgradeModel.Update(msg)
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
+		}
+		m.installModel, cmd = m.installModel.Update(msg)
+		cmds = append(cmds, cmd)
+		m.upgradeModel, cmd = m.upgradeModel.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 	switch m.selectedView {
 	case releasesView:
@@ -241,8 +198,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.valuesVP = viewport.New(m.width-6, 0)
 		m.manifestVP = viewport.New(m.width-6, 0)
 		m.help.Width = msg.Width
-		m.inputs[chartStep].Width = msg.Width - 6 - len(inputsHelper[0])
-		m.inputs[valuesStep].Width = msg.Width - 6 - len(inputsHelper[1])
+		m.installModel, _ = m.installModel.Update(msg)
+		m.upgradeModel, _ = m.upgradeModel.Update(msg)
 	case types.ListReleasesMsg:
 		if m.selectedView == releasesView {
 			m.releaseTable.SetRows(msg.Content)
@@ -256,8 +213,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.historyTable, cmd = m.historyTable.Update(msg)
 		cmds = append(cmds, cmd)
 	case types.UpgradeMsg:
-		m.upgradeStep = 0
-		m.resetAllInputs()
 		cmds = append(cmds, m.list)
 		m.selectedView = releasesView
 	case types.DeleteMsg:
@@ -292,6 +247,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch msg.String() {
+		case "i":
+			m.installing = true
+			cmds = append(cmds, m.installModel.Inputs[0].Focus())
+			return m, tea.Batch(cmds...)
 		case "r":
 			switch m.selectedView {
 			case releasesView:
@@ -306,11 +265,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.delete
 		case "u":
 			m.upgrading = true
-			cmd = m.inputs[chartStep].Focus()
+			m.upgradeModel.ReleaseName = m.releaseTable.SelectedRow()[0]
+			m.upgradeModel.Namespace = m.releaseTable.SelectedRow()[1]
+			cmd = m.upgradeModel.Inputs[0].Focus()
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
 			// return m, m.upgrade
 		case "esc", "backspace":
+			m.installing = false
 			m.upgrading = false
 			switch m.selectedView {
 			case releasesView:
@@ -354,25 +316,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	var view string
-	if !m.upgrading {
-		switch m.selectedView {
-		case releasesView:
-			tHeight := m.height - 2 - 1 // releaseTable padding + helper
-			m.releaseTable.SetHeight(tHeight)
-			view = m.renderReleasesTableView()
-		default:
-			view = m.renderReleaseDetail()
-		}
-	} else {
-		for step := 0; step < len(m.inputs); step++ {
-			if step == 0 {
-				view = fmt.Sprintf("%s %s", inputsHelper[step], m.inputs[step].View())
-				continue
-			}
-			view = lipgloss.JoinVertical(lipgloss.Top, view, fmt.Sprintf("%s %s", inputsHelper[step], m.inputs[step].View()))
-		}
-		view = styles.ActiveStyle.Border(styles.Border).Render(view)
+	if m.installing {
+		return m.installModel.View()
 	}
+	if m.upgrading {
+		return m.upgradeModel.View()
+	}
+
+	switch m.selectedView {
+	case releasesView:
+		tHeight := m.height - 2 - 1 // releaseTable padding + helper
+		m.releaseTable.SetHeight(tHeight)
+		view = m.renderReleasesTableView()
+	default:
+		view = m.renderReleaseDetail()
+	}
+
 	helperStyle := m.help.Styles.ShortSeparator
 	helpView := m.help.View(m.keys[m.selectedView]) + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
 	return view + "\n" + helpView
@@ -487,28 +446,193 @@ func (m Model) renderManifestView() string {
 	return view
 }
 
-func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
-	cmds := make([]tea.Cmd, len(m.inputs))
+func (m Model) list() tea.Msg {
+	var stdout bytes.Buffer
+	var releases []table.Row
 
-	// Only text inputs with Focus() set will respond, so it's safe to simply
-	// update all of them here without any further logic.
-	for i := range m.inputs {
-		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+	// Create the command
+	cmd := exec.Command("helm", "ls", "--all-namespaces")
+	cmd.Stdout = &stdout
+
+	// Run the command
+	err := cmd.Run()
+	if err != nil {
+		return types.ListReleasesMsg{Err: err}
 	}
 
-	return tea.Batch(cmds...)
+	lines := strings.Split(stdout.String(), "\n")
+	if len(lines) <= 1 {
+		return types.ListReleasesMsg{Content: releases}
+	}
+
+	// remove header and empty last line
+	lines = lines[1 : len(lines)-1]
+
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		updated := strings.Join(fields[3:7], " ")      // Join the parts that belong to the updated field
+		remainingFields := append(fields[:3], updated) // Keep the first 3 columns and append the updated field
+
+		// Add the rest of the fields after the updated part
+		remainingFields = append(remainingFields, fields[7:]...)
+		releases = append(releases, remainingFields)
+	}
+	return types.ListReleasesMsg{Content: releases, Err: nil}
 }
 
-func (m Model) blurAllInputs() tea.Cmd {
-	for i := range m.inputs {
-		m.inputs[i].Blur()
+func (m *Model) history() tea.Msg {
+	var stdout bytes.Buffer
+
+	if m.releaseTable.SelectedRow() == nil {
+		return types.HistoryMsg{Content: nil, Err: errors.New("no release selected")}
 	}
-	return nil
+
+	// Create the command
+	cmd := exec.Command("helm", "history", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
+	cmd.Stdout = &stdout
+
+	// Run the command
+	err := cmd.Run()
+	if err != nil {
+		return types.HistoryMsg{Err: err}
+	}
+
+	lines := strings.Split(stdout.String(), "\n")
+	if len(lines) <= 1 {
+		return types.HistoryMsg{Err: errors.New("no history found")}
+	}
+
+	// remove header and empty last line
+	lines = lines[1 : len(lines)-1]
+
+	var history []table.Row
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		updated := strings.Join(fields[1:6], " ")
+		description := strings.Join(fields[9:], " ")
+		remainingFields := append(fields[:1], updated)
+		remainingFields = append(remainingFields, fields[6:9]...)
+		remainingFields = append(remainingFields, description)
+		history = append(history, remainingFields)
+	}
+	return types.HistoryMsg{Content: history, Err: nil}
 }
 
-func (m Model) resetAllInputs() tea.Cmd {
-	for i := range m.inputs {
-		m.inputs[i].SetValue("")
+func (m *Model) delete() tea.Msg {
+
+	if m.releaseTable.SelectedRow() == nil {
+		return types.DeleteMsg{Err: errors.New("No release selected")}
 	}
-	return nil
+
+	// Create the command
+	cmd := exec.Command("helm", "uninstall", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
+
+	// Run the command
+	err := cmd.Run()
+	if err != nil {
+		return types.DeleteMsg{Err: err}
+	}
+	return types.DeleteMsg{Err: nil}
+}
+
+func (m Model) rollback() tea.Msg {
+
+	// Create the command
+	cmd := exec.Command("helm", "rollback", m.releaseTable.SelectedRow()[0], m.historyTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
+
+	// Run the command
+	err := cmd.Run()
+	if err != nil {
+		return types.RollbackMsg{Err: err}
+	}
+	return types.RollbackMsg{Err: nil}
+}
+
+func (m Model) getNotes() tea.Msg {
+	var stdout bytes.Buffer
+
+	if m.releaseTable.SelectedRow() == nil {
+		return types.NotesMsg{Err: errors.New("no release selected")}
+	}
+
+	cmd := exec.Command("helm", "get", "notes", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		return types.NotesMsg{Err: err}
+	}
+
+	return types.NotesMsg{Content: stdout.String(), Err: nil}
+}
+
+func (m Model) getMetadata() tea.Msg {
+	var stdout bytes.Buffer
+
+	if m.releaseTable.SelectedRow() == nil {
+		return types.NotesMsg{Err: errors.New("no release selected")}
+	}
+
+	cmd := exec.Command("helm", "get", "metadata", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		return types.MetadataMsg{Err: err}
+	}
+
+	return types.MetadataMsg{Content: stdout.String(), Err: nil}
+}
+
+func (m Model) getHooks() tea.Msg {
+	var stdout bytes.Buffer
+
+	if m.releaseTable.SelectedRow() == nil {
+		return types.HooksMsg{Err: errors.New("no release selected")}
+	}
+
+	cmd := exec.Command("helm", "get", "hooks", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		return types.HooksMsg{Err: err}
+	}
+
+	return types.HooksMsg{Content: stdout.String(), Err: nil}
+}
+
+func (m Model) getValues() tea.Msg {
+	var stdout bytes.Buffer
+
+	if m.releaseTable.SelectedRow() == nil {
+		return types.ValuesMsg{Err: errors.New("no release selected")}
+	}
+
+	cmd := exec.Command("helm", "get", "values", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		return types.ValuesMsg{Err: err}
+	}
+	lines := strings.Split(stdout.String(), "\n")
+	if len(lines) <= 1 {
+		return types.ValuesMsg{Err: errors.New("no history found")}
+	}
+	lines = lines[1:]
+
+	return types.ValuesMsg{Content: strings.Join(lines, "\n"), Err: nil}
+}
+
+func (m Model) getManifest() tea.Msg {
+	var stdout bytes.Buffer
+
+	if m.releaseTable.SelectedRow() == nil {
+		return types.ManifestMsg{Err: errors.New("no release selected")}
+	}
+
+	cmd := exec.Command("helm", "get", "manifest", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		return types.ManifestMsg{Err: err}
+	}
+	return types.ManifestMsg{Content: stdout.String(), Err: nil}
 }

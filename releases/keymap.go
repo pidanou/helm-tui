@@ -14,12 +14,13 @@ type keyMap struct {
 	ChangeTab key.Binding
 	Back      key.Binding
 	Upgrade   key.Binding
+	Cancel    key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
 // of the key.Map interface.
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Delete, k.Upgrade, k.Select, k.Refresh, k.Rollback, k.ChangeTab, k.Back}
+	return []key.Binding{k.Delete, k.Upgrade, k.Select, k.Refresh, k.Rollback, k.ChangeTab, k.Cancel, k.Back}
 }
 
 // FullHelp returns keybindings for the expanded help view. It's part of the
@@ -57,6 +58,9 @@ var readOnlyKeys = keyMap{
 	Upgrade:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Upgrade release")),
 	ChangeTab: key.NewBinding(key.WithKeys("left", "right", "h", "l"), key.WithHelp("←,h/→,l", "Navigate tabs")),
 	Back:      key.NewBinding(key.WithKeys("esc/backspace"), key.WithHelp("esc/backspace", "Back")),
+}
+var installKeys = keyMap{
+	Cancel: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
 }
 
 func generateKeys() []keyMap {

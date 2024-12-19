@@ -1,4 +1,4 @@
-package repositories
+package releases
 
 import (
 	"bytes"
@@ -16,21 +16,25 @@ import (
 )
 
 const (
-	nameStep installStep = iota
-	namespaceStep
-	valuesStep
-	confirmStep
+	installChartReleaseNameStep int = iota
+	installChartNameStep
+	installChartVersionStep
+	installChartNamespaceStep
+	installChartValuesStep
+	installChartConfirmStep
 )
 
-var inputsHelper = []string{
+var installInputsHelper = []string{
 	"Enter release name",
+	"Enter chart",
+	"Enter chart version (empty for latest)",
 	"Enter namespace (empty for default)",
 	"Edit default values ? y/n",
 	"Enter to install",
 }
 
 type InstallModel struct {
-	installStep installStep
+	installStep int
 	Chart       string
 	Version     string
 	Inputs      []textinput.Model
@@ -40,13 +44,16 @@ type InstallModel struct {
 	keys        keyMap
 }
 
-func InitInstallModel(chart, version string) InstallModel {
+func InitInstallModel() InstallModel {
+	chart := textinput.New()
+	version := textinput.New()
 	name := textinput.New()
 	namespace := textinput.New()
 	value := textinput.New()
 	confirm := textinput.New()
-	inputs := []textinput.Model{name, namespace, value, confirm}
-	m := InstallModel{installStep: nameStep, Inputs: inputs, help: help.New(), Chart: chart, Version: version, keys: installKeys}
+	inputs := []textinput.Model{name, chart, version, namespace, value, confirm}
+	m := InstallModel{installStep: installChartReleaseNameStep, Inputs: inputs, help: help.New(), keys: installKeys}
+	m.Inputs[0].Focus()
 	return m
 }
 
@@ -62,10 +69,7 @@ func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.help.Width = msg.Width
-		m.Inputs[nameStep].Width = msg.Width - 6 - len(inputsHelper[0])
-		m.Inputs[namespaceStep].Width = msg.Width - 6 - len(inputsHelper[1])
-		m.Inputs[valuesStep].Width = msg.Width - 6 - len(inputsHelper[2])
-		m.Inputs[confirmStep].Width = msg.Width - 6 - len(inputsHelper[3])
+		m.Inputs[installChartReleaseNameStep].Width = msg.Width - 6 - len(installInputsHelper[0])
 	case types.EditorFinishedMsg:
 		m.installStep++
 		for i := 0; i <= len(m.Inputs)-1; i++ {
@@ -78,8 +82,8 @@ func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	case types.InstallMsg:
 		m.installStep = 0
-		releaseName := m.Inputs[nameStep].Value()
-		namespace := m.Inputs[namespaceStep].Value()
+		releaseName := m.Inputs[installChartReleaseNameStep].Value()
+		namespace := m.Inputs[installChartNamespaceStep].Value()
 		if namespace == "" {
 			namespace = "default"
 		}
@@ -90,17 +94,17 @@ func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
-			if m.installStep == confirmStep {
+			if m.installStep == installChartConfirmStep {
 				m.installStep = 0
 
-				cmd = m.installPackage(m.Inputs[valuesStep].Value())
+				cmd = m.installPackage(m.Inputs[installChartValuesStep].Value())
 				cmds = append(cmds, cmd)
 
 				return m, tea.Batch(cmds...)
 			}
 
-			if m.installStep == valuesStep {
-				switch m.Inputs[valuesStep].Value() {
+			if m.installStep == installChartValuesStep {
+				switch m.Inputs[installChartValuesStep].Value() {
 				case "y":
 					return m, m.openEditorDefaultValues()
 				case "n":
@@ -137,14 +141,14 @@ func (m InstallModel) View() string {
 	var inputs string
 	for step := 0; step < len(m.Inputs); step++ {
 		if step == 0 {
-			inputs = fmt.Sprintf("%s %s", inputsHelper[step], m.Inputs[step].View())
+			inputs = fmt.Sprintf("%s %s", installInputsHelper[step], m.Inputs[step].View())
 			continue
 		}
-		inputs = lipgloss.JoinVertical(lipgloss.Top, inputs, fmt.Sprintf("%s %s", inputsHelper[step], m.Inputs[step].View()))
+		inputs = lipgloss.JoinVertical(lipgloss.Top, inputs, fmt.Sprintf("%s %s", installInputsHelper[step], m.Inputs[step].View()))
 	}
 	inputs = styles.ActiveStyle.Border(styles.Border).Render(inputs)
 	inputs = lipgloss.JoinVertical(lipgloss.Top, inputs)
-	return lipgloss.JoinVertical(lipgloss.Top, "\n", "Installing "+m.Chart+" "+m.Version, "\n", inputs, helpView)
+	return lipgloss.JoinVertical(lipgloss.Top, inputs, helpView)
 }
 
 func (m *InstallModel) updateInputs(msg tea.Msg) tea.Cmd {
@@ -173,8 +177,10 @@ func (m InstallModel) resetAllInputs() tea.Cmd {
 }
 
 func (m InstallModel) installPackage(mode string) tea.Cmd {
-	releaseName := m.Inputs[nameStep].Value()
-	namespace := m.Inputs[namespaceStep].Value()
+	chartName := m.Inputs[installChartNameStep].Value()
+	version := m.Inputs[installChartVersionStep].Value()
+	releaseName := m.Inputs[installChartReleaseNameStep].Value()
+	namespace := m.Inputs[installChartNamespaceStep].Value()
 	if namespace == "" {
 		namespace = "default"
 	}
@@ -186,9 +192,9 @@ func (m InstallModel) installPackage(mode string) tea.Cmd {
 		var cmd *exec.Cmd
 		// Create the command
 		if mode == "y" {
-			cmd = exec.Command("helm", "install", releaseName, m.Chart, "--version", m.Version, "--values", file, "--namespace", namespace, "--create-namespace")
+			cmd = exec.Command("helm", "install", releaseName, chartName, "--version", version, "--values", file, "--namespace", namespace, "--create-namespace")
 		} else {
-			cmd = exec.Command("helm", "install", releaseName, m.Chart, "--version", m.Version, "--namespace", namespace, "--create-namespace")
+			cmd = exec.Command("helm", "install", releaseName, chartName, "--version", version, "--namespace", namespace, "--create-namespace")
 		}
 		cmd.Stdout = &stdout
 		cmd.Stderr = &stderr
@@ -205,21 +211,22 @@ func (m InstallModel) installPackage(mode string) tea.Cmd {
 
 func (m InstallModel) openEditorDefaultValues() tea.Cmd {
 	var stdout, stderr bytes.Buffer
-	releaseName := m.Inputs[nameStep].Value()
-	namespace := m.Inputs[namespaceStep].Value()
+	releaseName := m.Inputs[installChartReleaseNameStep].Value()
+	namespace := m.Inputs[installChartNamespaceStep].Value()
 	if namespace == "" {
 		namespace = "default"
 	}
 	folder := fmt.Sprintf("%s/%s/%s", helpers.UserDir, namespace, releaseName)
 	_ = os.MkdirAll(folder, 0755)
 	file := fmt.Sprintf("%s/values.yaml", folder)
-	packageName := m.Chart
-	version := m.Version
+	packageName := m.Inputs[installChartNameStep].Value()
+	version := m.Inputs[installChartVersionStep].Value()
 
 	cmd := exec.Command("helm", "show", "values", packageName, "--version", version)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
+	helpers.Println(stdout.String(), stderr.String(), err)
 	if err != nil {
 		return func() tea.Msg { return types.EditorFinishedMsg{Err: err} }
 	}
@@ -240,6 +247,7 @@ func (m InstallModel) openEditorDefaultValues() tea.Cmd {
 }
 
 func (m InstallModel) cleanValueFile(folder string) tea.Cmd {
+	helpers.Println(folder)
 	return func() tea.Msg {
 		_ = os.RemoveAll(folder)
 		return nil
