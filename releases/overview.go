@@ -189,9 +189,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
-		m.height = msg.Height // -6: remove the table padding and menu
+		m.height = msg.Height
 		components.SetTable(&m.releaseTable, releaseCols, m.width)
-		components.SetTable(&m.historyTable, historyCols, m.width) // 7: 5 rows + 2 rows for the header
+		components.SetTable(&m.historyTable, historyCols, m.width)
 		m.notesVP = viewport.New(m.width-6, 0)
 		m.metadataVP = viewport.New(m.width-6, 0)
 		m.hooksVP = viewport.New(m.width-6, 0)

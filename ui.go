@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/pidanou/helmtui/helpers"
+	"github.com/pidanou/helmtui/hub"
 	"github.com/pidanou/helmtui/releases"
 	"github.com/pidanou/helmtui/repositories"
 	"github.com/pidanou/helmtui/styles"
@@ -17,11 +18,12 @@ import (
 
 type tabIndex uint
 
-var tabLabels = []string{"Releases", "Repositories"}
+var tabLabels = []string{"Releases", "Repositories", "Hub"}
 
 const (
 	releasesTab tabIndex = iota
 	repositoriesTab
+	hubTab
 )
 
 type mainModel struct {
@@ -38,11 +40,12 @@ func newModel(tabs []string) mainModel {
 	m := mainModel{state: releasesTab, tabs: tabs, tabContent: make([]tea.Model, len(tabs)), loaded: false}
 	m.tabContent[releasesTab], _ = releases.InitModel()
 	m.tabContent[repositoriesTab], _ = repositories.InitModel()
+	m.tabContent[hubTab] = hub.InitModel()
 	return m
 }
 
 func (m mainModel) Init() tea.Cmd {
-	return tea.Batch(createWorkingDir, textinput.Blink, m.tabContent[releasesTab].Init(), m.tabContent[repositoriesTab].Init())
+	return tea.Batch(createWorkingDir, textinput.Blink, m.tabContent[releasesTab].Init(), m.tabContent[repositoriesTab].Init(), m.tabContent[hubTab].Init())
 }
 
 func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -70,6 +73,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.tabContent[releasesTab], cmd = m.tabContent[releasesTab].Update(tea.WindowSizeMsg{Width: m.width, Height: msg.Height - lipgloss.Height(m.renderMenu())})
 		m.tabContent[repositoriesTab], cmd = m.tabContent[repositoriesTab].Update(tea.WindowSizeMsg{Width: m.width, Height: msg.Height - lipgloss.Height(m.renderMenu())})
+		m.tabContent[hubTab], cmd = m.tabContent[hubTab].Update(tea.WindowSizeMsg{Width: m.width, Height: msg.Height - lipgloss.Height(m.renderMenu())})
 		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -77,14 +81,14 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cleanup()
 			return m, tea.Quit
 		case "right":
-			if m.state == repositoriesTab {
+			if m.state == hubTab {
 				m.state = 0
 			} else {
 				m.state++
 			}
 		case "left":
 			if m.state == releasesTab {
-				m.state = repositoriesTab
+				m.state = hubTab
 			} else {
 				m.state--
 			}
@@ -98,11 +102,17 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.tabContent[repositoriesTab], cmd = m.tabContent[repositoriesTab].Update(msg)
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
+		case hubTab:
+			m.tabContent[hubTab], cmd = m.tabContent[hubTab].Update(msg)
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
 		}
 	}
 	m.tabContent[releasesTab], cmd = m.tabContent[releasesTab].Update(msg)
 	cmds = append(cmds, cmd)
 	m.tabContent[repositoriesTab], cmd = m.tabContent[repositoriesTab].Update(msg)
+	cmds = append(cmds, cmd)
+	m.tabContent[hubTab], cmd = m.tabContent[hubTab].Update(msg)
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }

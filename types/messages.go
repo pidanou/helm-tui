@@ -90,3 +90,8 @@ type UpdateRepoMsg struct {
 type DebounceEndMsg struct {
 	Tag int
 }
+
+type HubSearchResultMsg struct {
+	Content []table.Row
+	Err     error
+}
