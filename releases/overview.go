@@ -136,7 +136,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case types.InstallMsg:
 			m.installing = false
 			m.installModel, cmd = m.installModel.Update(msg)
-			cmds = append(cmds, cmd)
+			cmds = append(cmds, cmd, m.list)
 			return m, tea.Batch(cmds...)
 		}
 		m.installModel, cmd = m.installModel.Update(msg)
@@ -154,7 +154,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case types.UpgradeMsg:
 			m.upgrading = false
 			m.upgradeModel, cmd = m.upgradeModel.Update(msg)
-			cmds = append(cmds, cmd)
+			cmds = append(cmds, cmd, m.list)
 			return m, tea.Batch(cmds...)
 		}
 		m.installModel, cmd = m.installModel.Update(msg)
@@ -293,7 +293,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.historyTable.Focus()
 				cmds = append(cmds, m.history, m.getNotes, m.getMetadata, m.getHooks, m.getValues, m.getManifest)
 			}
-		case "right", "l":
+		case "tab":
 			switch m.selectedView {
 			case releasesView:
 			case manifestView:
@@ -301,7 +301,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			default:
 				m.selectedView++
 			}
-		case "left", "h":
+		case "shift+tab":
 			switch m.selectedView {
 			case releasesView:
 			case historyView:

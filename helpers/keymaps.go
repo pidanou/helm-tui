@@ -24,6 +24,28 @@ func (k keyMap) FullHelp() [][]key.Binding {
 }
 
 var CommonKeys = keyMap{
-	MenuNext: key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "Next panel")),
+	MenuNext: key.NewBinding(key.WithKeys("tab"), key.WithHelp("←/→", "Change panel")),
 	Quit:     key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "Quit")),
+}
+
+type SuggestionKeyMap struct {
+	AcceptSuggestion key.Binding
+	NextSuggestion   key.Binding
+	PrevSuggestion   key.Binding
+}
+
+var SuggestionInputKeyMap = SuggestionKeyMap{
+	AcceptSuggestion: key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "Accept suggestion")),
+	NextSuggestion:   key.NewBinding(key.WithKeys("down", "ctrl+n"), key.WithHelp("down/ctrl+n", "Next suggestion")),
+	PrevSuggestion:   key.NewBinding(key.WithKeys("up", "ctrl+p"), key.WithHelp("up/ctrl+p", "Previous suggestion")),
+}
+
+func (k SuggestionKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.AcceptSuggestion, k.NextSuggestion, k.PrevSuggestion}
+}
+
+// FullHelp returns keybindings for the expanded help view. It's part of the
+// key.Map interface.
+func (k SuggestionKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{}
 }

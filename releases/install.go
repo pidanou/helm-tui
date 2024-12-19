@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -33,6 +35,8 @@ var installInputsHelper = []string{
 	"Enter to install",
 }
 
+const debounce = 500 * time.Millisecond
+
 type InstallModel struct {
 	installStep int
 	Chart       string
@@ -42,6 +46,7 @@ type InstallModel struct {
 	height      int
 	help        help.Model
 	keys        keyMap
+	tag         int
 }
 
 func InitInstallModel() InstallModel {
@@ -53,6 +58,8 @@ func InitInstallModel() InstallModel {
 	confirm := textinput.New()
 	inputs := []textinput.Model{name, chart, version, namespace, value, confirm}
 	m := InstallModel{installStep: installChartReleaseNameStep, Inputs: inputs, help: help.New(), keys: installKeys}
+	m.Inputs[installChartNameStep].ShowSuggestions = true
+	m.Inputs[installChartVersionStep].ShowSuggestions = true
 	m.Inputs[0].Focus()
 	return m
 }
@@ -91,7 +98,17 @@ func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
 		cmds = append(cmds, m.cleanValueFile(folder), m.blurAllInputs(), m.resetAllInputs())
 
 		return m, tea.Batch(cmds...)
+	case types.DebounceEndMsg:
+		if msg.Tag == m.tag {
+			if m.Inputs[installChartNameStep].Focused() {
+				m.Inputs[installChartNameStep].SetSuggestions(m.searchLocalPackage())
+			}
+			if m.Inputs[installChartVersionStep].Focused() {
+				m.Inputs[installChartVersionStep].SetSuggestions(m.searchLocalPackageVersion())
+			}
+		}
 	case tea.KeyMsg:
+		m.tag++
 		switch msg.String() {
 		case "enter":
 			if m.installStep == installChartConfirmStep {
@@ -130,6 +147,10 @@ func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
 				m.Inputs[i].Blur()
 				m.Inputs[i].SetValue("")
 			}
+		default:
+			return m, tea.Batch(m.updateInputs(msg), tea.Tick(debounce, func(_ time.Time) tea.Msg {
+				return types.DebounceEndMsg{Tag: m.tag}
+			}))
 		}
 	}
 	return m, m.updateInputs(msg)
@@ -138,6 +159,9 @@ func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
 func (m InstallModel) View() string {
 	helperStyle := m.help.Styles.ShortSeparator
 	helpView := m.help.View(m.keys) + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
+	if m.Inputs[installChartNameStep].Focused() {
+		helpView = m.help.View(m.keys) + helperStyle.Render(" • ") + m.help.View(helpers.SuggestionInputKeyMap) + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
+	}
 	var inputs string
 	for step := 0; step < len(m.Inputs); step++ {
 		if step == 0 {
@@ -226,7 +250,6 @@ func (m InstallModel) openEditorDefaultValues() tea.Cmd {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-	helpers.Println(stdout.String(), stderr.String(), err)
 	if err != nil {
 		return func() tea.Msg { return types.EditorFinishedMsg{Err: err} }
 	}
@@ -244,6 +267,51 @@ func (m InstallModel) openEditorDefaultValues() tea.Cmd {
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		return types.EditorFinishedMsg{Err: err}
 	})
+}
+
+func (m InstallModel) searchLocalPackage() []string {
+	if m.Inputs[installChartNameStep].Value() == "" {
+		return []string{}
+	}
+	var stdout bytes.Buffer
+	cmd := exec.Command("helm", "search", "repo", m.Inputs[installChartNameStep].Value())
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		return []string{}
+	}
+	results := strings.Split(stdout.String(), "\n")
+	results = results[1 : len(results)-1]
+
+	var suggestions []string
+	for _, row := range results {
+		chart := strings.Fields(row)
+		suggestions = append(suggestions, chart[0])
+	}
+
+	m.Inputs[installChartNameStep].SetSuggestions(suggestions)
+	return suggestions
+}
+
+func (m InstallModel) searchLocalPackageVersion() []string {
+	var stdout bytes.Buffer
+	cmd := exec.Command("helm", "search", "repo", "--regexp", "\v"+m.Inputs[installChartNameStep].Value()+"\v", "--versions")
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		return []string{}
+	}
+	results := strings.Split(stdout.String(), "\n")
+	results = results[1 : len(results)-1]
+
+	var suggestions []string
+	for _, row := range results {
+		chart := strings.Fields(row)
+		suggestions = append(suggestions, chart[1])
+	}
+
+	m.Inputs[installChartNameStep].SetSuggestions(suggestions)
+	return suggestions
 }
 
 func (m InstallModel) cleanValueFile(folder string) tea.Cmd {

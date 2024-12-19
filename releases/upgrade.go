@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -40,6 +42,7 @@ type UpgradeModel struct {
 	height      int
 	help        help.Model
 	keys        keyMap
+	tag         int
 }
 
 func InitUpgradeModel() UpgradeModel {
@@ -49,6 +52,8 @@ func InitUpgradeModel() UpgradeModel {
 	confirm := textinput.New()
 	inputs := []textinput.Model{chart, version, value, confirm}
 	m := UpgradeModel{upgradeStep: upgradeReleaseChartStep, Inputs: inputs, help: help.New(), keys: installKeys}
+	m.Inputs[upgradeReleaseChartStep].ShowSuggestions = true
+	m.Inputs[upgradeReleaseVersionStep].ShowSuggestions = true
 	m.Inputs[0].Focus()
 	return m
 }
@@ -73,6 +78,15 @@ func (m UpgradeModel) Update(msg tea.Msg) (UpgradeModel, tea.Cmd) {
 		cmds = append(cmds, m.cleanValueFile(folder), m.blurAllInputs(), m.resetAllInputs())
 		return m, tea.Batch(cmds...)
 
+	case types.DebounceEndMsg:
+		if msg.Tag == m.tag {
+			if m.Inputs[upgradeReleaseChartStep].Focused() {
+				m.Inputs[upgradeReleaseChartStep].SetSuggestions(m.searchLocalPackage())
+			}
+			if m.Inputs[upgradeReleaseVersionStep].Focused() {
+				m.Inputs[upgradeReleaseVersionStep].SetSuggestions(m.searchLocalPackageVersion())
+			}
+		}
 	case types.EditorFinishedMsg:
 		m.upgradeStep++
 		for i := 0; i <= len(m.Inputs)-1; i++ {
@@ -84,6 +98,7 @@ func (m UpgradeModel) Update(msg tea.Msg) (UpgradeModel, tea.Cmd) {
 		}
 		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
+		m.tag++
 		switch msg.String() {
 		case "enter":
 			if m.upgradeStep == upgradeReleaseConfirmStep {
@@ -123,6 +138,11 @@ func (m UpgradeModel) Update(msg tea.Msg) (UpgradeModel, tea.Cmd) {
 				m.Inputs[i].Blur()
 				m.Inputs[i].SetValue("")
 			}
+		default:
+			return m, tea.Batch(m.updateInputs(msg), tea.Tick(debounce, func(_ time.Time) tea.Msg {
+				return types.DebounceEndMsg{Tag: m.tag}
+			}))
+
 		}
 	}
 	cmd = m.updateInputs(msg)
@@ -132,6 +152,9 @@ func (m UpgradeModel) Update(msg tea.Msg) (UpgradeModel, tea.Cmd) {
 func (m UpgradeModel) View() string {
 	helperStyle := m.help.Styles.ShortSeparator
 	helpView := m.help.View(m.keys) + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
+	if m.Inputs[upgradeReleaseChartStep].Focused() {
+		helpView = m.help.View(m.keys) + helperStyle.Render(" • ") + m.help.View(helpers.SuggestionInputKeyMap) + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
+	}
 	var Inputs string
 	for step := 0; step < len(m.Inputs); step++ {
 		if step == 0 {
@@ -249,6 +272,51 @@ func (m UpgradeModel) openEditorLastValues() tea.Cmd {
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		return types.EditorFinishedMsg{Err: err}
 	})
+}
+
+func (m UpgradeModel) searchLocalPackage() []string {
+	if m.Inputs[upgradeReleaseChartStep].Value() == "" {
+		return []string{}
+	}
+	var stdout bytes.Buffer
+	cmd := exec.Command("helm", "search", "repo", m.Inputs[upgradeReleaseChartStep].Value())
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		return []string{}
+	}
+	results := strings.Split(stdout.String(), "\n")
+	results = results[1 : len(results)-1]
+
+	var suggestions []string
+	for _, row := range results {
+		chart := strings.Fields(row)
+		suggestions = append(suggestions, chart[0])
+	}
+
+	m.Inputs[upgradeReleaseChartStep].SetSuggestions(suggestions)
+	return suggestions
+}
+
+func (m UpgradeModel) searchLocalPackageVersion() []string {
+	var stdout bytes.Buffer
+	cmd := exec.Command("helm", "search", "repo", "--regexp", "\v"+m.Inputs[upgradeReleaseChartStep].Value()+"\v", "--versions")
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		return []string{}
+	}
+	results := strings.Split(stdout.String(), "\n")
+	results = results[1 : len(results)-1]
+
+	var suggestions []string
+	for _, row := range results {
+		chart := strings.Fields(row)
+		suggestions = append(suggestions, chart[1])
+	}
+
+	m.Inputs[installChartNameStep].SetSuggestions(suggestions)
+	return suggestions
 }
 
 func (m UpgradeModel) cleanValueFile(folder string) tea.Cmd {

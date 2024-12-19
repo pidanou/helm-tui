@@ -76,11 +76,17 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			cleanup()
 			return m, tea.Quit
-		case "tab":
+		case "right":
 			if m.state == repositoriesTab {
 				m.state = 0
 			} else {
 				m.state++
+			}
+		case "left":
+			if m.state == releasesTab {
+				m.state = repositoriesTab
+			} else {
+				m.state--
 			}
 		}
 		switch m.state {

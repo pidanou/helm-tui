@@ -86,3 +86,7 @@ type AddRepoMsg struct {
 type UpdateRepoMsg struct {
 	Err error
 }
+
+type DebounceEndMsg struct {
+	Tag int
+}
