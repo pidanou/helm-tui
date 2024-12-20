@@ -21,13 +21,14 @@ import (
 )
 
 type keyMap struct {
-	Search key.Binding
-	Show   key.Binding
-	Cancel key.Binding
+	AddRepo key.Binding
+	Search  key.Binding
+	Show    key.Binding
+	Cancel  key.Binding
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Show, k.Search, k.Cancel}
+	return []key.Binding{k.AddRepo, k.Show, k.Search, k.Cancel}
 }
 
 // FullHelp returns keybindings for the expanded help view. It's part of the
@@ -38,11 +39,13 @@ func (k keyMap) FullHelp() [][]key.Binding {
 
 var defaultKeysHelp = keyMap{
 	Search: key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "Search")),
+	Show:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "Focus table")),
 }
 
 var tableKeysHelp = keyMap{
-	Show:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "Show default values")),
-	Search: key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "Search")),
+	Show:    key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "Show default values")),
+	Search:  key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "Search")),
+	AddRepo: key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "Add repo")),
 }
 
 var searchKeyHelp = keyMap{
@@ -55,6 +58,7 @@ var addRepoKeyHelp = keyMap{
 
 var defaultValuesKeyHelp = keyMap{
 	Search: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
+	Cancel: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
 }
 
 type HubModel struct {
@@ -109,6 +113,7 @@ func InitModel() tea.Model {
 		repoAddInput:   textinput.New(),
 	}
 	m.searchBar.Placeholder = "/ to Search a package"
+	m.repoAddInput.Placeholder = "Enter local repository name"
 	m.resultTable.SetStyles(s)
 	m.resultTable.KeyMap = k
 	return m

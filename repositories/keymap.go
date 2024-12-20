@@ -56,7 +56,7 @@ var versionsKeys = keyMap{
 		key.WithKeys("d"),
 		key.WithHelp("d", "Delete repo"),
 	),
-	Move:    key.NewBinding(key.WithKeys("h", "	j", "k", "l", "left", "right", "up", "down"), key.WithHelp("hjkl/↑/↓/←/→", "Move")),
+	Move:    key.NewBinding(key.WithKeys("h", "	j", "k", "l", "tab", "shift+tab", "up", "down"), key.WithHelp("hjkl/Tab/Shit+Tab/↑/↓/", "Move")),
 	Update:  key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Upgrade repo")),
 	Install: key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install version")),
 }
