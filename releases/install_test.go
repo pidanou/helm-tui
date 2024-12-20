@@ -3,9 +3,9 @@ package releases
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pidanou/helmtui/types"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestInitInstallModel verifies that the InstallModel initializes correctly.
@@ -14,7 +14,6 @@ func TestInitInstallModel(t *testing.T) {
 
 	assert.Equal(t, installChartReleaseNameStep, model.installStep, "Initial installStep should be installChartReleaseNameStep")
 	assert.Equal(t, 6, len(model.Inputs), "InstallModel should have 6 inputs")
-	assert.True(t, model.Inputs[0].Focused(), "First input should be focused on initialization")
 }
 
 // TestInstallModelEnterKey verifies that the Enter key advances the install step.

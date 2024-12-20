@@ -51,7 +51,7 @@ func InitInstallModel(chart, version string) InstallModel {
 }
 
 func (m InstallModel) Init() tea.Cmd {
-	return nil
+	return m.Inputs[0].Focus()
 }
 
 func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
@@ -84,7 +84,7 @@ func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
 			namespace = "default"
 		}
 		folder := fmt.Sprintf("%s/%s/%s", helpers.UserDir, namespace, releaseName)
-		cmds = append(cmds, m.cleanValueFile(folder), m.blurAllInputs(), m.resetAllInputs())
+		cmds = append(cmds, m.cleanValueFile(folder), m.blurAllInputs(), m.resetAllInputs(), m.Inputs[nameStep].Focus())
 
 		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
@@ -96,6 +96,9 @@ func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
 				cmd = m.installPackage(m.Inputs[valuesStep].Value())
 				cmds = append(cmds, cmd)
 
+				m.Inputs[confirmStep].Blur()
+				cmd = m.Inputs[nameStep].Focus()
+				cmds = append(cmds, cmd)
 				return m, tea.Batch(cmds...)
 			}
 
@@ -126,9 +129,11 @@ func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
 				m.Inputs[i].Blur()
 				m.Inputs[i].SetValue("")
 			}
+			cmds = append(cmds, m.Inputs[repoNameStep].Focus())
 		}
 	}
-	return m, m.updateInputs(msg)
+	cmds = append(cmds, m.updateInputs(msg))
+	return m, tea.Batch(cmds...)
 }
 
 func (m InstallModel) View() string {

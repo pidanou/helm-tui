@@ -130,17 +130,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.String() == "esc" {
 				m.installing = false
 			}
-			m.installModel, cmd = m.installModel.Update(msg)
-			cmds = append(cmds, cmd)
-			return m, tea.Batch(cmds...)
 		case types.InstallMsg:
 			m.installing = false
-			m.installModel, cmd = m.installModel.Update(msg)
-			cmds = append(cmds, cmd, m.list)
-			return m, tea.Batch(cmds...)
+			cmds = append(cmds, m.list)
 		}
 		m.installModel, cmd = m.installModel.Update(msg)
 		cmds = append(cmds, cmd)
+		return m, tea.Batch(cmds...)
 	}
 	if m.upgrading {
 		switch msg := msg.(type) {
@@ -148,19 +144,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.String() == "esc" {
 				m.upgrading = false
 			}
-			m.upgradeModel, cmd = m.upgradeModel.Update(msg)
-			cmds = append(cmds, cmd)
-			return m, tea.Batch(cmds...)
 		case types.UpgradeMsg:
 			m.upgrading = false
-			m.upgradeModel, cmd = m.upgradeModel.Update(msg)
-			cmds = append(cmds, cmd, m.list)
-			return m, tea.Batch(cmds...)
+			cmds = append(cmds, m.list)
 		}
-		m.installModel, cmd = m.installModel.Update(msg)
-		cmds = append(cmds, cmd)
 		m.upgradeModel, cmd = m.upgradeModel.Update(msg)
 		cmds = append(cmds, cmd)
+		return m, tea.Batch(cmds...)
 	}
 	switch m.selectedView {
 	case releasesView:
@@ -249,7 +239,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "i":
 			m.installing = true
-			cmds = append(cmds, m.installModel.Inputs[0].Focus())
+			cmd = m.installModel.Init()
+			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
 		case "r":
 			switch m.selectedView {
@@ -267,11 +258,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.upgrading = true
 			m.upgradeModel.ReleaseName = m.releaseTable.SelectedRow()[0]
 			m.upgradeModel.Namespace = m.releaseTable.SelectedRow()[1]
-			cmd = m.upgradeModel.Inputs[0].Focus()
+			cmd = m.upgradeModel.Init()
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
-			// return m, m.upgrade
-		case "esc", "backspace":
+		case "esc":
 			m.installing = false
 			m.upgrading = false
 			switch m.selectedView {

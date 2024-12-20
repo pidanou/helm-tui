@@ -25,25 +25,24 @@ var addInputsHelper = []string{
 }
 
 type AddModel struct {
-	installStep int
-	Inputs      []textinput.Model
-	width       int
-	height      int
-	help        help.Model
-	keys        keyMap
+	addStep int
+	Inputs  []textinput.Model
+	width   int
+	height  int
+	help    help.Model
+	keys    keyMap
 }
 
 func InitAddModel() AddModel {
 	repoName := textinput.New()
 	url := textinput.New()
 	inputs := []textinput.Model{repoName, url}
-	inputs[repoNameStep].Focus()
-	m := AddModel{installStep: repoNameStep, Inputs: inputs, help: help.New(), keys: installKeys}
+	m := AddModel{addStep: repoNameStep, Inputs: inputs, help: help.New(), keys: installKeys}
 	return m
 }
 
 func (m AddModel) Init() tea.Cmd {
-	return nil
+	return m.Inputs[repoNameStep].Focus()
 }
 
 func (m AddModel) Update(msg tea.Msg) (AddModel, tea.Cmd) {
@@ -59,20 +58,21 @@ func (m AddModel) Update(msg tea.Msg) (AddModel, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
-			if m.installStep == urlStep {
+			if m.addStep == urlStep {
 				cmds = append(cmds, m.addRepo(m.Inputs[repoNameStep].Value(), m.Inputs[urlStep].Value()))
 				cmd = m.resetAllInputs()
 				cmds = append(cmds, cmd)
 				cmd = m.blurAllInputs()
 				cmds = append(cmds, cmd)
-
+				cmd = m.Inputs[repoNameStep].Focus()
+				cmds = append(cmds, cmd)
 				return m, tea.Batch(cmds...)
 			}
 
-			m.installStep++
+			m.addStep++
 
 			for i := 0; i <= len(m.Inputs)-1; i++ {
-				if i == int(m.installStep) {
+				if i == int(m.addStep) {
 					cmds[i] = m.Inputs[i].Focus()
 					continue
 				}
@@ -81,14 +81,17 @@ func (m AddModel) Update(msg tea.Msg) (AddModel, tea.Cmd) {
 
 			return m, tea.Batch(cmds...)
 		case "esc":
-			m.installStep = 0
+			m.addStep = 0
 			for i := 0; i <= len(m.Inputs)-1; i++ {
 				m.Inputs[i].Blur()
 				m.Inputs[i].SetValue("")
 			}
+			cmd = m.Inputs[repoNameStep].Focus()
+			cmds = append(cmds, cmd)
 		}
 	}
-	return m, m.updateInputs(msg)
+	cmds = append(cmds, m.updateInputs(msg))
+	return m, tea.Batch(cmds...)
 }
 
 func (m AddModel) View() string {

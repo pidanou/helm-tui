@@ -60,12 +60,11 @@ func InitInstallModel() InstallModel {
 	m := InstallModel{installStep: installChartReleaseNameStep, Inputs: inputs, help: help.New(), keys: installKeys}
 	m.Inputs[installChartNameStep].ShowSuggestions = true
 	m.Inputs[installChartVersionStep].ShowSuggestions = true
-	m.Inputs[0].Focus()
 	return m
 }
 
 func (m InstallModel) Init() tea.Cmd {
-	return nil
+	return m.Inputs[0].Focus()
 }
 
 func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
@@ -315,7 +314,6 @@ func (m InstallModel) searchLocalPackageVersion() []string {
 }
 
 func (m InstallModel) cleanValueFile(folder string) tea.Cmd {
-	helpers.Println(folder)
 	return func() tea.Msg {
 		_ = os.RemoveAll(folder)
 		return nil
