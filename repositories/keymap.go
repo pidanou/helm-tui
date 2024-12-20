@@ -28,6 +28,10 @@ func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
+var defaultValuesKeyHelp = keyMap{
+	Cancel: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
+}
+
 var repoListKeys = keyMap{
 	Delete: key.NewBinding(
 		key.WithKeys("d"),

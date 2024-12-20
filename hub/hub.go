@@ -43,7 +43,7 @@ var defaultKeysHelp = keyMap{
 }
 
 var tableKeysHelp = keyMap{
-	Show:    key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "Show default values")),
+	Show:    key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "Show default values")),
 	Search:  key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "Search")),
 	AddRepo: key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "Add repo")),
 }
@@ -57,7 +57,7 @@ var addRepoKeyHelp = keyMap{
 }
 
 var defaultValuesKeyHelp = keyMap{
-	Search: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
+	Search: key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "Search")),
 	Cancel: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
 }
 
@@ -167,6 +167,8 @@ func (m HubModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, m.searchHub)
 				return m, tea.Batch(cmds...)
 			}
+			m.resultTable.Focus()
+		case "v":
 			if m.resultTable.Focused() {
 				if m.resultTable.SelectedRow() != nil {
 					m.view = defaultValueView
@@ -174,7 +176,6 @@ func (m HubModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, tea.Batch(cmds...)
 			}
-			m.resultTable.Focus()
 		case "esc":
 			m.view = searchView
 			m.repoAddInput.Blur()

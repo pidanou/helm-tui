@@ -100,3 +100,8 @@ type HubSearchDefaultValueMsg struct {
 	Content string
 	Err     error
 }
+
+type DefaultValueMsg struct {
+	Content string
+	Err     error
+}

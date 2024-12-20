@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/table"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/pidanou/helmtui/components"
@@ -27,16 +28,18 @@ const (
 )
 
 type Model struct {
-	selectedView selectedView
-	keys         []keyMap
-	tables       []table.Model
-	installModel InstallModel
-	addModel     AddModel
-	help         help.Model
-	installing   bool
-	adding       bool
-	width        int
-	height       int
+	selectedView     selectedView
+	keys             []keyMap
+	tables           []table.Model
+	installModel     InstallModel
+	addModel         AddModel
+	help             help.Model
+	installing       bool
+	adding           bool
+	defaultValueVP   viewport.Model
+	showDefaultValue bool
+	width            int
+	height           int
 }
 
 var repositoryCols = []components.ColumnDefinition{
@@ -97,14 +100,16 @@ func InitModel() (tea.Model, tea.Cmd) {
 	repoTable.Focus()
 	keys := generateKeys()
 	m := Model{
-		tables:       tables,
-		selectedView: listView,
-		keys:         keys,
-		installModel: InitInstallModel("", ""),
-		addModel:     InitAddModel(),
-		help:         help.New(),
-		installing:   false,
-		adding:       false,
+		tables:           tables,
+		selectedView:     listView,
+		keys:             keys,
+		installModel:     InitInstallModel("", ""),
+		addModel:         InitAddModel(),
+		help:             help.New(),
+		installing:       false,
+		adding:           false,
+		defaultValueVP:   viewport.New(0, 0),
+		showDefaultValue: false,
 	}
 	return m, nil
 }
@@ -158,6 +163,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		components.SetTable(&m.tables[listView], repositoryCols, m.width/4)
 		components.SetTable(&m.tables[packagesView], packagesCols, m.width/4)
 		components.SetTable(&m.tables[versionsView], versionsCols, 2*m.width/4)
+		m.defaultValueVP.Width = m.width - 2
 		m.installModel.Update(msg)
 		m.addModel.Update(msg)
 		m.help.Width = msg.Width
@@ -184,6 +190,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.list)
 	case types.UpdateRepoMsg:
 		cmds = append(cmds, m.list)
+	case types.DefaultValueMsg:
+		m.defaultValueVP.SetContent(msg.Content)
 
 	// handle key presses
 	case tea.KeyMsg:
@@ -200,6 +208,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.adding = true
 			cmd = m.addModel.Init()
 			return m, cmd
+		case "v":
+			m.showDefaultValue = true
+			return m, m.getDefaultValue
 		case "down", "up", "j", "k":
 			switch m.selectedView {
 			case listView:
@@ -230,6 +241,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.installing = false
 			m.adding = false
+			m.showDefaultValue = false
 			m.selectedView = listView
 		}
 	}
@@ -238,6 +250,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.tables[packagesView], cmd = m.tables[packagesView].Update(msg)
 	cmds = append(cmds, cmd)
 	m.tables[versionsView], cmd = m.tables[versionsView].Update(msg)
+	cmds = append(cmds, cmd)
+	m.defaultValueVP, cmd = m.defaultValueVP.Update(msg)
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
@@ -253,6 +267,9 @@ func (m Model) View() string {
 	}
 	if m.adding {
 		return m.addModel.View()
+	}
+	if m.showDefaultValue {
+		return m.renderDefaultValueView()
 	}
 	helperStyle := m.help.Styles.ShortSeparator
 	return view + "\n" + helpView + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
@@ -278,6 +295,15 @@ func (m Model) renderTable(table table.Model, title string, active bool) string 
 	}
 	tableView = baseStyle.Render(tableView)
 	return lipgloss.JoinVertical(lipgloss.Top, topBorder, tableView)
+}
+
+func (m Model) renderDefaultValueView() string {
+	m.defaultValueVP.Height = m.height - 2 - 1
+	defaultValueTopBorder := styles.GenerateTopBorderWithTitle(" Default Values ", m.defaultValueVP.Width, styles.Border, styles.InactiveStyle)
+	baseStyle := styles.InactiveStyle.Border(styles.Border, false, true, true)
+	helperStyle := m.help.Styles.ShortSeparator
+	helpView := helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
+	return lipgloss.JoinVertical(lipgloss.Top, defaultValueTopBorder, baseStyle.Render(m.defaultValueVP.View()), m.help.View(defaultValuesKeyHelp)+helpView)
 }
 
 // Commands
@@ -424,4 +450,16 @@ func (m Model) searchPackageVersions() tea.Msg {
 		releases = append(releases, fields)
 	}
 	return types.PackageVersionsMsg{Content: releases, Err: nil}
+}
+
+func (m Model) getDefaultValue() tea.Msg {
+	var stdout bytes.Buffer
+	cmd := exec.Command("helm", "show", "values", fmt.Sprintf("%s", m.tables[packagesView].SelectedRow()[0]), "--version", m.tables[versionsView].SelectedRow()[0])
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		return types.DefaultValueMsg{Content: "Unable to get default values"}
+	}
+	helpers.Println(stdout.String())
+	return types.DefaultValueMsg{Content: stdout.String()}
 }
