@@ -37,6 +37,7 @@ func InitAddModel() AddModel {
 	repoName := textinput.New()
 	url := textinput.New()
 	inputs := []textinput.Model{repoName, url}
+	inputs[repoNameStep].Focus()
 	m := AddModel{installStep: repoNameStep, Inputs: inputs, help: help.New(), keys: installKeys}
 	return m
 }
