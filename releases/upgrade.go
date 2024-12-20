@@ -54,12 +54,11 @@ func InitUpgradeModel() UpgradeModel {
 	m := UpgradeModel{upgradeStep: upgradeReleaseChartStep, Inputs: inputs, help: help.New(), keys: installKeys}
 	m.Inputs[upgradeReleaseChartStep].ShowSuggestions = true
 	m.Inputs[upgradeReleaseVersionStep].ShowSuggestions = true
-	m.Inputs[0].Focus()
 	return m
 }
 
 func (m UpgradeModel) Init() tea.Cmd {
-	return nil
+	return m.Inputs[0].Focus()
 }
 
 func (m UpgradeModel) Update(msg tea.Msg) (UpgradeModel, tea.Cmd) {
@@ -207,7 +206,6 @@ func (m UpgradeModel) upgrade() tea.Msg {
 	cmd.Stderr = &stderr
 	// Run the command
 	err := cmd.Run()
-	helpers.Println(err, stderr.String())
 	if err != nil {
 		return types.UpgradeMsg{Err: err}
 	}

@@ -50,7 +50,7 @@ var historyKeys = keyMap{
 	),
 	Upgrade:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Upgrade release")),
 	ChangeTab: key.NewBinding(key.WithKeys("tab", "shift+tab"), key.WithHelp("tab/shift+tab", "Navigate tabs")),
-	Back:      key.NewBinding(key.WithKeys("esc/backspace"), key.WithHelp("esc/backspace", "Back")),
+	Back:      key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Back")),
 }
 
 var readOnlyKeys = keyMap{
@@ -61,7 +61,7 @@ var readOnlyKeys = keyMap{
 	),
 	Upgrade:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Upgrade release")),
 	ChangeTab: key.NewBinding(key.WithKeys("tab", "shift+tab"), key.WithHelp("tab/shift+tab", "Navigate tabs")),
-	Back:      key.NewBinding(key.WithKeys("esc/backspace"), key.WithHelp("esc/backspace", "Back")),
+	Back:      key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Back")),
 }
 var installKeys = keyMap{
 	Cancel: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),

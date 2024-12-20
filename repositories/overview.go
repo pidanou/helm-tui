@@ -27,18 +27,16 @@ const (
 )
 
 type Model struct {
-	selectedView      selectedView
-	keys              []keyMap
-	repositoriesTable table.Model
-	packagesTable     table.Model
-	versionsTable     table.Model
-	installModel      InstallModel
-	addModel          AddModel
-	help              help.Model
-	installing        bool
-	adding            bool
-	width             int
-	height            int
+	selectedView selectedView
+	keys         []keyMap
+	tables       []table.Model
+	installModel InstallModel
+	addModel     AddModel
+	help         help.Model
+	installing   bool
+	adding       bool
+	width        int
+	height       int
 }
 
 var repositoryCols = []components.ColumnDefinition{
@@ -57,9 +55,9 @@ var versionsCols = []components.ColumnDefinition{
 }
 
 func generateTables() (table.Model, table.Model, table.Model) {
-	repositoriesTable := table.New()
-	packagesTable := table.New()
-	versionsTable := table.New()
+	tableListView := table.New()
+	tablePackagesView := table.New()
+	tableVersionsView := table.New()
 
 	s := table.DefaultStyles()
 	k := table.DefaultKeyMap()
@@ -79,34 +77,34 @@ func generateTables() (table.Model, table.Model, table.Model) {
 		Background(lipgloss.Color("57")).
 		Bold(false)
 
-	repositoriesTable.SetStyles(s)
-	repositoriesTable.KeyMap = k
+	tableListView.SetStyles(s)
+	tableListView.KeyMap = k
 
-	packagesTable.SetStyles(s)
-	packagesTable.KeyMap = k
+	tablePackagesView.SetStyles(s)
+	tablePackagesView.KeyMap = k
 
-	versionsTable.SetStyles(s)
-	versionsTable.KeyMap = k
+	tableVersionsView.SetStyles(s)
+	tableVersionsView.KeyMap = k
 
-	return repositoriesTable, packagesTable, versionsTable
+	return tableListView, tablePackagesView, tableVersionsView
 }
 
 func InitModel() (tea.Model, tea.Cmd) {
-	repoTable, packagesTable, versionsTable := generateTables()
+	tables := []table.Model{}
+	repoTable, tablePackagesView, tableVersionsView := generateTables()
 	repoTable.Focus()
-	packagesTable.Focus()
-	versionsTable.Focus()
+	tables = append(tables, repoTable, tablePackagesView, tableVersionsView)
+	repoTable.Focus()
 	keys := generateKeys()
-	m := Model{repositoriesTable: repoTable,
-		packagesTable: packagesTable,
-		versionsTable: versionsTable,
-		selectedView:  listView,
-		keys:          keys,
-		installModel:  InitInstallModel("", ""),
-		addModel:      InitAddModel(),
-		help:          help.New(),
-		installing:    false,
-		adding:        false,
+	m := Model{
+		tables:       tables,
+		selectedView: listView,
+		keys:         keys,
+		installModel: InitInstallModel("", ""),
+		addModel:     InitAddModel(),
+		help:         help.New(),
+		installing:   false,
+		adding:       false,
 	}
 	return m, nil
 }
@@ -123,14 +121,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyMsg:
 			if msg.String() == "esc" {
 				m.installing = false
-				m.installModel.Update(msg)
-				return m, nil
+				m.installModel, cmd = m.installModel.Update(msg)
+				cmds = append(cmds, cmd)
+				return m, tea.Batch(cmds...)
 			}
 		case types.InstallMsg:
 			m.installing = false
-			m.installModel, cmd = m.installModel.Update(msg)
-			cmds = append(cmds, cmd)
-			return m, cmd
+			cmds = append(cmds, m.list)
 		}
 		m.installModel, cmd = m.installModel.Update(msg)
 		cmds = append(cmds, cmd)
@@ -141,8 +138,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyMsg:
 			if msg.String() == "esc" {
 				m.adding = false
-				m.addModel.Update(msg)
-				return m, nil
+				m.addModel, cmd = m.addModel.Update(msg)
+				cmds = append(cmds, cmd)
+				return m, tea.Batch(cmds...)
 			}
 		case types.AddRepoMsg:
 			m.adding = false
@@ -152,46 +150,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 		return m, tea.Batch(cmds...)
 	}
-
-	// handle table updates
-	switch m.selectedView {
-	case listView:
-		m.repositoriesTable, cmd = m.repositoriesTable.Update(msg)
-		cmds = append(cmds, cmd)
-	case packagesView:
-		m.packagesTable, cmd = m.packagesTable.Update(msg)
-		cmds = append(cmds, cmd)
-	case versionsView:
-		m.versionsTable, cmd = m.versionsTable.Update(msg)
-		cmds = append(cmds, cmd)
-	}
-
 	// handle messages
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		components.SetTable(&m.repositoriesTable, repositoryCols, m.width/4)
-		components.SetTable(&m.packagesTable, packagesCols, m.width/4)
-		components.SetTable(&m.versionsTable, versionsCols, 2*m.width/4)
+		components.SetTable(&m.tables[listView], repositoryCols, m.width/4)
+		components.SetTable(&m.tables[packagesView], packagesCols, m.width/4)
+		components.SetTable(&m.tables[versionsView], versionsCols, 2*m.width/4)
 		m.installModel.Update(msg)
 		m.addModel.Update(msg)
 		m.help.Width = msg.Width
 	case types.ListRepoMsg:
-		m.repositoriesTable.SetRows(msg.Content)
-		m.repositoriesTable, cmd = m.repositoriesTable.Update(msg)
+		m.tables[listView].SetRows(msg.Content)
+		m.tables[listView], cmd = m.tables[listView].Update(msg)
 		cmds = append(cmds, cmd, m.searchPackages)
 	case types.PackagesMsg:
-		m.packagesTable.SetRows(msg.Content)
-		m.packagesTable, cmd = m.packagesTable.Update(msg)
+		m.tables[packagesView].SetRows(msg.Content)
+		m.tables[packagesView], cmd = m.tables[packagesView].Update(msg)
 		cmds = append(cmds, cmd, m.searchPackageVersions)
 	case types.PackageVersionsMsg:
-		m.versionsTable.SetRows(msg.Content)
-		m.versionsTable, cmd = m.versionsTable.Update(msg)
+		m.tables[versionsView].SetRows(msg.Content)
+		m.tables[versionsView], cmd = m.tables[versionsView].Update(msg)
 		cmds = append(cmds, cmd)
 	case types.RemoveMsg:
 		cmds = append(cmds, m.list)
-		m.repositoriesTable.SetCursor(0)
+		m.tables[listView].SetCursor(0)
 		m.selectedView = listView
 	case types.InstallMsg:
 		m.installing = false
@@ -205,17 +189,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "i":
-			if m.packagesTable.SelectedRow() != nil && m.versionsTable.SelectedRow() != nil {
-				m.installModel.Chart = m.packagesTable.SelectedRow()[0]
-				m.installModel.Version = m.versionsTable.SelectedRow()[0]
-				cmd = m.installModel.Inputs[0].Focus()
+			if m.tables[packagesView].SelectedRow() != nil && m.tables[versionsView].SelectedRow() != nil {
+				m.installModel.Chart = m.tables[packagesView].SelectedRow()[0]
+				m.installModel.Version = m.tables[versionsView].SelectedRow()[0]
 				m.installing = true
-				cmds = append(cmds, cmd)
+				cmd = m.installModel.Init()
+				return m, cmd
 			}
 		case "a":
-			cmd = m.addModel.Inputs[0].Focus()
 			m.adding = true
-			cmds = append(cmds, cmd)
+			cmd = m.addModel.Init()
+			return m, cmd
 		case "down", "up", "j", "k":
 			switch m.selectedView {
 			case listView:
@@ -229,6 +213,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			default:
 				m.selectedView++
 			}
+			m.FocusOnlyTable(m.selectedView)
 		case "d":
 			cmds = append(cmds, m.remove)
 		case "shift+tab", "h":
@@ -237,6 +222,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			default:
 				m.selectedView--
 			}
+			m.FocusOnlyTable(m.selectedView)
 		case "u":
 			return m, m.update
 		case "r":
@@ -246,20 +232,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.adding = false
 			m.selectedView = listView
 		}
-	default:
-		m.installModel, cmd = m.installModel.Update(msg)
-		cmds = append(cmds, cmd)
-		m.addModel, cmd = m.addModel.Update(msg)
-		cmds = append(cmds, cmd)
 	}
+	m.tables[listView], cmd = m.tables[listView].Update(msg)
+	cmds = append(cmds, cmd)
+	m.tables[packagesView], cmd = m.tables[packagesView].Update(msg)
+	cmds = append(cmds, cmd)
+	m.tables[versionsView], cmd = m.tables[versionsView].Update(msg)
+	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
 func (m Model) View() string {
 	helpView := m.help.View(m.keys[m.selectedView])
-	repoView := m.renderTable(m.repositoriesTable, " Repositories ", m.selectedView == listView)
-	packagesView := m.renderTable(m.packagesTable, " Packages ", m.selectedView == packagesView)
-	versionsView := m.renderTable(m.versionsTable, " Versions ", m.selectedView == versionsView)
+	repoView := m.renderTable(m.tables[listView], " Repositories ", m.selectedView == listView)
+	packagesView := m.renderTable(m.tables[packagesView], " Packages ", m.selectedView == packagesView)
+	versionsView := m.renderTable(m.tables[versionsView], " Versions ", m.selectedView == versionsView)
 	view := lipgloss.JoinHorizontal(lipgloss.Top, repoView, packagesView, versionsView)
 	if m.installing {
 		return m.installModel.View()
@@ -269,6 +256,13 @@ func (m Model) View() string {
 	}
 	helperStyle := m.help.Styles.ShortSeparator
 	return view + "\n" + helpView + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
+}
+
+func (m *Model) FocusOnlyTable(index selectedView) {
+	m.tables[listView].Blur()
+	m.tables[packagesView].Blur()
+	m.tables[versionsView].Blur()
+	m.tables[index].Focus()
 }
 
 func (m Model) renderTable(table table.Model, title string, active bool) string {
@@ -323,13 +317,13 @@ func (m Model) list() tea.Msg {
 }
 
 func (m Model) update() tea.Msg {
-	if m.repositoriesTable.SelectedRow() == nil {
+	if m.tables[listView].SelectedRow() == nil {
 		return types.UpdateRepoMsg{Err: errors.New("no repo selected")}
 	}
 	var stdout bytes.Buffer
 
 	// Create the command
-	cmd := exec.Command("helm", "repo", "update", m.repositoriesTable.SelectedRow()[0])
+	cmd := exec.Command("helm", "repo", "update", m.tables[listView].SelectedRow()[0])
 	cmd.Stdout = &stdout
 
 	// Run the command
@@ -342,13 +336,13 @@ func (m Model) update() tea.Msg {
 }
 
 func (m Model) remove() tea.Msg {
-	if m.repositoriesTable.SelectedRow() == nil {
+	if m.tables[listView].SelectedRow() == nil {
 		return types.RemoveMsg{Err: errors.New("no repo selected")}
 	}
 	var stdout bytes.Buffer
 
 	// Create the command
-	cmd := exec.Command("helm", "repo", "remove", m.repositoriesTable.SelectedRow()[0])
+	cmd := exec.Command("helm", "repo", "remove", m.tables[listView].SelectedRow()[0])
 	cmd.Stdout = &stdout
 
 	// Run the command
@@ -363,12 +357,12 @@ func (m Model) remove() tea.Msg {
 func (m Model) searchPackages() tea.Msg {
 	var stdout bytes.Buffer
 	releases := []table.Row{}
-	if m.repositoriesTable.SelectedRow() == nil {
+	if m.tables[listView].SelectedRow() == nil {
 		return types.PackagesMsg{Content: releases, Err: errors.New("no repo selected")}
 	}
 
 	// Create the command
-	cmd := exec.Command("helm", "search", "repo", fmt.Sprintf("%s/", m.repositoriesTable.SelectedRow()[0]))
+	cmd := exec.Command("helm", "search", "repo", fmt.Sprintf("%s/", m.tables[listView].SelectedRow()[0]))
 	cmd.Stdout = &stdout
 
 	// Run the command
@@ -398,12 +392,12 @@ func (m Model) searchPackages() tea.Msg {
 func (m Model) searchPackageVersions() tea.Msg {
 	var stdout bytes.Buffer
 	releases := []table.Row{}
-	if m.packagesTable.SelectedRow() == nil {
+	if m.tables[packagesView].SelectedRow() == nil {
 		return types.PackageVersionsMsg{Content: releases, Err: errors.New("no package selected")}
 	}
 
 	// Create the command
-	cmd := exec.Command("helm", "search", "repo", fmt.Sprintf("%s", m.packagesTable.SelectedRow()[0]), "--versions")
+	cmd := exec.Command("helm", "search", "repo", fmt.Sprintf("%s", m.tables[packagesView].SelectedRow()[0]), "--versions")
 	cmd.Stdout = &stdout
 
 	// Run the command
