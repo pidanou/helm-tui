@@ -95,3 +95,8 @@ type HubSearchResultMsg struct {
 	Content []table.Row
 	Err     error
 }
+
+type HubSearchDefaultValueMsg struct {
+	Content string
+	Err     error
+}
