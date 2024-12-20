@@ -1,0 +1,45 @@
+name: 🛠️ Build, Test & Scan
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-go:
+    name: 🐹 Build Go Project
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐹 Set Up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: 📦 Install Go Dependencies
+        run: go mod tidy
+
+      - name: 🛠️ Build Go Project
+        run: go build -o helmtui .
+
+  test-go:
+    name: ✅ Run Go Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐹 Set Up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: 📦 Install Go Dependencies
+        run: go mod tidy
+
+      - name: ✅ Run Go Tests with Coverage
+        run: go test ./...
