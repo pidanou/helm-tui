@@ -1,6 +1,7 @@
 package releases
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -15,6 +16,13 @@ func (m Model) View() string {
 	}
 	if m.upgrading {
 		return m.upgradeModel.View()
+	}
+	if m.deleting {
+		confirmMsg := "  No release selected. Press n to go back  "
+		if m.releaseTable.SelectedRow() != nil {
+			confirmMsg = fmt.Sprintf("  Delete release %s? y/n  ", m.releaseTable.SelectedRow()[0])
+		}
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, styles.ActiveStyle.Border(styles.Border).Render(confirmMsg))
 	}
 
 	switch m.selectedView {

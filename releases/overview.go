@@ -36,6 +36,7 @@ type Model struct {
 	installing   bool
 	upgradeModel UpgradeModel
 	upgrading    bool
+	deleting     bool
 	width        int
 	height       int
 }
@@ -74,7 +75,7 @@ func InitModel() (Model, tea.Cmd) {
 	table := components.GenerateTable()
 	k := generateKeys()
 	m := Model{releaseTable: table, historyTable: table, help: help.New(), keys: k, upgrading: false,
-		installModel: InitInstallModel(), installing: false, upgradeModel: InitUpgradeModel(),
+		installModel: InitInstallModel(), installing: false, upgradeModel: InitUpgradeModel(), deleting: false,
 	}
 
 	m.releaseTable.Focus()
@@ -115,6 +116,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.upgradeModel, cmd = m.upgradeModel.Update(msg)
 		cmds = append(cmds, cmd)
 		return m, tea.Batch(cmds...)
+	}
+	if m.deleting {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "y":
+				return m, m.delete
+			case "n":
+				m.deleting = false
+				return m, nil
+			}
+		}
 	}
 	switch m.selectedView {
 	case releasesView:
@@ -170,6 +183,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.list)
 		m.selectedView = releasesView
 	case types.DeleteMsg:
+		m.deleting = false
 		cmds = append(cmds, m.list)
 		m.releaseTable.SetCursor(0)
 		m.selectedView = releasesView
@@ -217,7 +231,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.rollback
 			}
 		case "D":
-			return m, m.delete
+			m.deleting = true
 		case "u":
 			m.upgrading = true
 			m.upgradeModel.ReleaseName = m.releaseTable.SelectedRow()[0]
