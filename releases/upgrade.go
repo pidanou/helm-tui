@@ -105,10 +105,12 @@ func (m UpgradeModel) Update(msg tea.Msg) (UpgradeModel, tea.Cmd) {
 			if m.upgradeStep == upgradeReleaseValuesStep {
 				switch m.Inputs[upgradeReleaseValuesStep].Value() {
 				case "d":
-					return m, m.openEditorDefaultValues()
+					defaultValue := true
+					return m, m.openEditorWithValues(defaultValue)
 				case "n":
 				case "y":
-					return m, m.openEditorLastValues()
+					defaultValue := false
+					return m, m.openEditorWithValues(defaultValue)
 				default:
 					return m, nil
 				}

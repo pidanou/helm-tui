@@ -57,7 +57,7 @@ func (m UpgradeModel) upgrade() tea.Msg {
 	return types.UpgradeMsg{Err: nil}
 }
 
-func (m UpgradeModel) openEditorDefaultValues() tea.Cmd {
+func (m UpgradeModel) openEditorWithValues(defaultValues bool) tea.Cmd {
 	var stdout, stderr bytes.Buffer
 	folder := fmt.Sprintf("%s/%s/%s", helpers.UserDir, m.Namespace, m.ReleaseName)
 	_ = os.MkdirAll(folder, 0755)
@@ -65,56 +65,19 @@ func (m UpgradeModel) openEditorDefaultValues() tea.Cmd {
 	packageName := m.Inputs[upgradeReleaseChartStep].Value()
 	version := m.Inputs[upgradeReleaseVersionStep].Value()
 
-	cmd := exec.Command("helm", "show", "values", packageName, "--version", version)
+	var cmd *exec.Cmd
+	if defaultValues {
+		cmd = exec.Command("helm", "show", "values", packageName, "--version", version)
+	} else {
+		cmd = exec.Command("helm", "get", "values", m.ReleaseName, "--namespace", m.Namespace)
+	}
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
 		return func() tea.Msg { return types.EditorFinishedMsg{Err: err} }
 	}
-	err = os.WriteFile(file, stdout.Bytes(), 0644)
-	if err != nil {
-		return func() tea.Msg {
-			return types.EditorFinishedMsg{Err: err}
-		}
-	}
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		editor = "vim"
-	}
-	c := exec.Command(editor, file)
-	return tea.ExecProcess(c, func(err error) tea.Msg {
-		return types.EditorFinishedMsg{Err: err}
-	})
-}
-
-func (m UpgradeModel) openEditorLastValues() tea.Cmd {
-	var stdout, stderr bytes.Buffer
-	folder := fmt.Sprintf("%s/%s/%s", helpers.UserDir, m.Namespace, m.ReleaseName)
-	_ = os.MkdirAll(folder, 0755)
-	file := fmt.Sprintf("%s/values.yaml", folder)
-
-	cmd := exec.Command("helm", "get", "values", m.ReleaseName, "--namespace", m.Namespace)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	if err != nil {
-		return func() tea.Msg { return types.EditorFinishedMsg{Err: err} }
-	}
-	err = os.WriteFile(file, stdout.Bytes(), 0644)
-	if err != nil {
-		return func() tea.Msg {
-			return types.EditorFinishedMsg{Err: err}
-		}
-	}
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		editor = "vim"
-	}
-	c := exec.Command(editor, file)
-	return tea.ExecProcess(c, func(err error) tea.Msg {
-		return types.EditorFinishedMsg{Err: err}
-	})
+	return helpers.WriteAndOpenFile(stdout.Bytes(), file)
 }
 
 func (m UpgradeModel) searchLocalPackage() []string {

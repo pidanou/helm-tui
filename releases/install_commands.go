@@ -65,20 +65,7 @@ func (m InstallModel) openEditorDefaultValues() tea.Cmd {
 	if err != nil {
 		return func() tea.Msg { return types.EditorFinishedMsg{Err: err} }
 	}
-	err = os.WriteFile(file, stdout.Bytes(), 0644)
-	if err != nil {
-		return func() tea.Msg {
-			return types.EditorFinishedMsg{Err: err}
-		}
-	}
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		editor = "vim"
-	}
-	c := exec.Command(editor, file)
-	return tea.ExecProcess(c, func(err error) tea.Msg {
-		return types.EditorFinishedMsg{Err: err}
-	})
+	return helpers.WriteAndOpenFile(stdout.Bytes(), file)
 }
 
 func (m InstallModel) searchLocalPackage() []string {

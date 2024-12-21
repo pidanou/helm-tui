@@ -8,7 +8,6 @@ import (
 	"github.com/pidanou/helmtui/styles"
 )
 
-
 func (m Model) View() string {
 	var view string
 	if m.installing {
