@@ -218,7 +218,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedView++
 			}
 			m.FocusOnlyTable(m.selectedView)
-		case "d":
+		case "D":
 			cmds = append(cmds, m.remove)
 		case "shift+tab", "h":
 			switch m.selectedView {

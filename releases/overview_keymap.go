@@ -33,8 +33,8 @@ func (k keyMap) FullHelp() [][]key.Binding {
 var releasesKeys = keyMap{
 	Install: key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install new release")),
 	Delete: key.NewBinding(
-		key.WithKeys("d"),
-		key.WithHelp("d", "Delete"),
+		key.WithKeys("D"),
+		key.WithHelp("D", "Delete release"),
 	),
 	Refresh: key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "Refresh")),
 	Select:  key.NewBinding(key.WithKeys("enter/space"), key.WithHelp("enter/space", "Details")),
@@ -45,8 +45,8 @@ var historyKeys = keyMap{
 	Install:  key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install new release")),
 	Rollback: key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "Rollback to revision")),
 	Delete: key.NewBinding(
-		key.WithKeys("d"),
-		key.WithHelp("d", "Delete"),
+		key.WithKeys("D"),
+		key.WithHelp("D", "Delete release"),
 	),
 	Upgrade:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Upgrade release")),
 	ChangeTab: key.NewBinding(key.WithKeys("tab", "shift+tab"), key.WithHelp("tab/shift+tab", "Navigate tabs")),
@@ -56,8 +56,8 @@ var historyKeys = keyMap{
 var readOnlyKeys = keyMap{
 	Install: key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install new release")),
 	Delete: key.NewBinding(
-		key.WithKeys("d"),
-		key.WithHelp("d", "Delete release"),
+		key.WithKeys("D"),
+		key.WithHelp("D", "Delete release"),
 	),
 	Upgrade:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Upgrade release")),
 	ChangeTab: key.NewBinding(key.WithKeys("tab", "shift+tab"), key.WithHelp("tab/shift+tab", "Navigate tabs")),

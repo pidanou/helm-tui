@@ -45,8 +45,8 @@ func (m AddModel) Update(msg tea.Msg) (AddModel, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.help.Width = msg.Width
-		m.Inputs[repoNameStep].Width = msg.Width - 6 - len(inputsHelper[0])
-		m.Inputs[urlStep].Width = msg.Width - 6 - len(inputsHelper[1])
+		m.Inputs[repoNameStep].Width = msg.Width - 5 - len(inputsHelper[0])
+		m.Inputs[urlStep].Width = msg.Width - 5 - len(inputsHelper[1])
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":

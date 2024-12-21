@@ -100,10 +100,10 @@ func generateTables() (table.Model, table.Model) {
 	return t, h
 }
 
-func InitModel() (tea.Model, tea.Cmd) {
-	t, h := generateTables()
+func InitModel() (Model, tea.Cmd) {
+	table := components.GenerateTable()
 	k := generateKeys()
-	m := Model{releaseTable: t, historyTable: h, help: help.New(), keys: k, upgrading: false,
+	m := Model{releaseTable: table, historyTable: table, help: help.New(), keys: k, upgrading: false,
 		installModel: InitInstallModel(), installing: false, upgradeModel: InitUpgradeModel(),
 	}
 
@@ -246,7 +246,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case historyView:
 				return m, m.rollback
 			}
-		case "d":
+		case "D":
 			return m, m.delete
 		case "u":
 			m.upgrading = true

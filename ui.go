@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/pidanou/helmtui/helpers"
 	"github.com/pidanou/helmtui/hub"
+	"github.com/pidanou/helmtui/plugins"
 	"github.com/pidanou/helmtui/releases"
 	"github.com/pidanou/helmtui/repositories"
 	"github.com/pidanou/helmtui/styles"
@@ -18,12 +19,13 @@ import (
 
 type tabIndex uint
 
-var tabLabels = []string{"Releases", "Repositories", "Hub"}
+var tabLabels = []string{"Releases", "Repositories", "Hub", "Plugins"}
 
 const (
 	releasesTab tabIndex = iota
 	repositoriesTab
 	hubTab
+	pluginsTab
 )
 
 type mainModel struct {
@@ -41,11 +43,16 @@ func newModel(tabs []string) mainModel {
 	m.tabContent[releasesTab], _ = releases.InitModel()
 	m.tabContent[repositoriesTab], _ = repositories.InitModel()
 	m.tabContent[hubTab] = hub.InitModel()
+	m.tabContent[pluginsTab] = plugins.InitModel()
 	return m
 }
 
 func (m mainModel) Init() tea.Cmd {
-	return tea.Batch(createWorkingDir, textinput.Blink, m.tabContent[releasesTab].Init(), m.tabContent[repositoriesTab].Init(), m.tabContent[hubTab].Init())
+	var cmds = []tea.Cmd{createWorkingDir, textinput.Blink}
+	for _, i := range m.tabContent {
+		cmds = append(cmds, i.Init())
+	}
+	return tea.Batch(cmds...)
 }
 
 func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -74,6 +81,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.tabContent[releasesTab], cmd = m.tabContent[releasesTab].Update(tea.WindowSizeMsg{Width: m.width, Height: msg.Height - lipgloss.Height(m.renderMenu())})
 		m.tabContent[repositoriesTab], cmd = m.tabContent[repositoriesTab].Update(tea.WindowSizeMsg{Width: m.width, Height: msg.Height - lipgloss.Height(m.renderMenu())})
 		m.tabContent[hubTab], cmd = m.tabContent[hubTab].Update(tea.WindowSizeMsg{Width: m.width, Height: msg.Height - lipgloss.Height(m.renderMenu())})
+		m.tabContent[pluginsTab], cmd = m.tabContent[pluginsTab].Update(tea.WindowSizeMsg{Width: m.width, Height: msg.Height - lipgloss.Height(m.renderMenu())})
 		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -81,14 +89,14 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cleanup()
 			return m, tea.Quit
 		case "right":
-			if m.state == hubTab {
+			if m.state == pluginsTab {
 				m.state = 0
 			} else {
 				m.state++
 			}
 		case "left":
 			if m.state == releasesTab {
-				m.state = hubTab
+				m.state = pluginsTab
 			} else {
 				m.state--
 			}
@@ -106,6 +114,10 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.tabContent[hubTab], cmd = m.tabContent[hubTab].Update(msg)
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
+		case pluginsTab:
+			m.tabContent[pluginsTab], cmd = m.tabContent[pluginsTab].Update(msg)
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
 		}
 	}
 	m.tabContent[releasesTab], cmd = m.tabContent[releasesTab].Update(msg)
@@ -113,6 +125,8 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.tabContent[repositoriesTab], cmd = m.tabContent[repositoriesTab].Update(msg)
 	cmds = append(cmds, cmd)
 	m.tabContent[hubTab], cmd = m.tabContent[hubTab].Update(msg)
+	cmds = append(cmds, cmd)
+	m.tabContent[pluginsTab], cmd = m.tabContent[pluginsTab].Update(msg)
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }

@@ -57,10 +57,10 @@ func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.help.Width = msg.Width
-		m.Inputs[nameStep].Width = msg.Width - 6 - len(inputsHelper[0])
-		m.Inputs[namespaceStep].Width = msg.Width - 6 - len(inputsHelper[1])
-		m.Inputs[valuesStep].Width = msg.Width - 6 - len(inputsHelper[2])
-		m.Inputs[confirmStep].Width = msg.Width - 6 - len(inputsHelper[3])
+		m.Inputs[nameStep].Width = msg.Width - 5 - len(inputsHelper[0])
+		m.Inputs[namespaceStep].Width = msg.Width - 5 - len(inputsHelper[1])
+		m.Inputs[valuesStep].Width = msg.Width - 5 - len(inputsHelper[2])
+		m.Inputs[confirmStep].Width = msg.Width - 5 - len(inputsHelper[3])
 	case types.EditorFinishedMsg:
 		m.installStep++
 		for i := 0; i <= len(m.Inputs)-1; i++ {

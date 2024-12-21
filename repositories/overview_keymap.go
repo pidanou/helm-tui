@@ -34,8 +34,8 @@ var defaultValuesKeyHelp = keyMap{
 
 var repoListKeys = keyMap{
 	Delete: key.NewBinding(
-		key.WithKeys("d"),
-		key.WithHelp("d", "Delete repo"),
+		key.WithKeys("D"),
+		key.WithHelp("D", "Delete repo"),
 	),
 	Move:    key.NewBinding(key.WithKeys("h", "	j", "k", "l", "tab", "shift+tab", "up", "down"), key.WithHelp("hjkl/Tab/Shit+Tab/↑/↓/", "Move")),
 	Refresh: key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "Refresh")),
@@ -46,8 +46,8 @@ var repoListKeys = keyMap{
 
 var chartsListKeys = keyMap{
 	Delete: key.NewBinding(
-		key.WithKeys("d"),
-		key.WithHelp("d", "Delete repo"),
+		key.WithKeys("D"),
+		key.WithHelp("D", "Delete repo"),
 	),
 	Move:    key.NewBinding(key.WithKeys("h", "	j", "k", "l", "tab", "shift+tab", "up", "down"), key.WithHelp("hjkl/Tab/Shit+Tab/↑/↓/", "Move")),
 	Select:  key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "Select")),
@@ -57,8 +57,8 @@ var chartsListKeys = keyMap{
 
 var versionsKeys = keyMap{
 	Delete: key.NewBinding(
-		key.WithKeys("d"),
-		key.WithHelp("d", "Delete repo"),
+		key.WithKeys("D"),
+		key.WithHelp("D", "Delete repo"),
 	),
 	Move:    key.NewBinding(key.WithKeys("h", "	j", "k", "l", "tab", "shift+tab", "up", "down"), key.WithHelp("hjkl/Tab/Shit+Tab/↑/↓/", "Move")),
 	Update:  key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Upgrade repo")),
