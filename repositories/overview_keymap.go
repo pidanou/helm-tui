@@ -65,10 +65,6 @@ var versionsKeys = keyMap{
 	Install: key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install version")),
 }
 
-var installKeys = keyMap{
-	Cancel: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
-}
-
 func generateKeys() []keyMap {
 	return []keyMap{repoListKeys, chartsListKeys, versionsKeys}
 }
