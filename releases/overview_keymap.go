@@ -63,9 +63,6 @@ var readOnlyKeys = keyMap{
 	ChangeTab: key.NewBinding(key.WithKeys("tab", "shift+tab"), key.WithHelp("tab/shift+tab", "Navigate tabs")),
 	Back:      key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Back")),
 }
-var installKeys = keyMap{
-	Cancel: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
-}
 
 func generateKeys() []keyMap {
 	return []keyMap{releasesKeys, historyKeys, readOnlyKeys, readOnlyKeys, readOnlyKeys, readOnlyKeys, readOnlyKeys}
