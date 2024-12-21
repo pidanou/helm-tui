@@ -6,9 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/pidanou/helmtui/components"
-	"github.com/pidanou/helmtui/styles"
 	"github.com/pidanou/helmtui/types"
 )
 
@@ -38,26 +36,10 @@ const (
 )
 
 func InitModel() tea.Model {
-	s := table.DefaultStyles()
-	k := table.DefaultKeyMap()
-	k.HalfPageUp.Unbind()
-	k.PageDown.Unbind()
-	k.HalfPageDown.Unbind()
-	k.HalfPageDown.Unbind()
-	k.GotoBottom.Unbind()
-	k.GotoTop.Unbind()
-	s.Header = s.Header.
-		BorderStyle(styles.Border).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(true)
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
+	resultTable := components.GenerateTable()
 	m := HubModel{
 		searchBar:      textinput.New(),
-		resultTable:    table.New(),
+		resultTable:    resultTable,
 		defaultValueVP: viewport.New(0, 0),
 		help:           help.New(),
 		view:           searchView,
@@ -65,8 +47,6 @@ func InitModel() tea.Model {
 	}
 	m.searchBar.Placeholder = "/ to Search a package"
 	m.repoAddInput.Placeholder = "Enter local repository name"
-	m.resultTable.SetStyles(s)
-	m.resultTable.KeyMap = k
 	return m
 }
 

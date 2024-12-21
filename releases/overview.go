@@ -5,9 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/pidanou/helmtui/components"
-	"github.com/pidanou/helmtui/styles"
 	"github.com/pidanou/helmtui/types"
 )
 
@@ -71,34 +69,6 @@ var menuItem = []string{
 }
 
 var releaseTableCache table.Model
-
-func generateTables() (table.Model, table.Model) {
-	t := table.New()
-	h := table.New()
-	s := table.DefaultStyles()
-	k := table.DefaultKeyMap()
-	k.HalfPageUp.Unbind()
-	k.PageDown.Unbind()
-	k.HalfPageDown.Unbind()
-	k.HalfPageDown.Unbind()
-	k.GotoBottom.Unbind()
-	k.GotoTop.Unbind()
-	s.Header = s.Header.
-		BorderStyle(styles.Border).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(true)
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
-
-	t.SetStyles(s)
-	h.SetStyles(s)
-	t.KeyMap = k
-	h.KeyMap = k
-	return t, h
-}
 
 func InitModel() (Model, tea.Cmd) {
 	table := components.GenerateTable()

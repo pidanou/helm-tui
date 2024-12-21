@@ -27,6 +27,8 @@ type PluginsModel struct {
 
 func InitModel() PluginsModel {
 	table := components.GenerateTable()
+	input := textinput.New()
+	input.Placeholder = "Enter plugin path/url"
 	return PluginsModel{pluginsTable: table, help: help.New(), keys: overviewKeys, installPluginInput: textinput.New()}
 }
 

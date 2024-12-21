@@ -5,9 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/pidanou/helmtui/components"
-	"github.com/pidanou/helmtui/styles"
 	"github.com/pidanou/helmtui/types"
 )
 
@@ -50,44 +48,12 @@ var versionsCols = []components.ColumnDefinition{
 	{Title: "Description", FlexFactor: 1},
 }
 
-func generateTables() (table.Model, table.Model, table.Model) {
-	tableListView := table.New()
-	tablePackagesView := table.New()
-	tableVersionsView := table.New()
-
-	s := table.DefaultStyles()
-	k := table.DefaultKeyMap()
-	k.HalfPageUp.Unbind()
-	k.PageDown.Unbind()
-	k.HalfPageDown.Unbind()
-	k.HalfPageDown.Unbind()
-	k.GotoBottom.Unbind()
-	k.GotoTop.Unbind()
-	s.Header = s.Header.
-		BorderStyle(styles.Border).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(true)
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
-
-	tableListView.SetStyles(s)
-	tableListView.KeyMap = k
-
-	tablePackagesView.SetStyles(s)
-	tablePackagesView.KeyMap = k
-
-	tableVersionsView.SetStyles(s)
-	tableVersionsView.KeyMap = k
-
-	return tableListView, tablePackagesView, tableVersionsView
-}
-
 func InitModel() (tea.Model, tea.Cmd) {
 	tables := []table.Model{}
-	repoTable, tablePackagesView, tableVersionsView := generateTables()
+	t := components.GenerateTable()
+	repoTable := t
+	tablePackagesView := t
+	tableVersionsView := t
 	repoTable.Focus()
 	tables = append(tables, repoTable, tablePackagesView, tableVersionsView)
 	repoTable.Focus()
