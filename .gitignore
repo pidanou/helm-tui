@@ -1,3 +1,5 @@
 debug.log
 charts/*
 .DS_Store
+
+dist/
