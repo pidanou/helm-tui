@@ -2,10 +2,10 @@ package releases
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -273,40 +273,42 @@ func (m InstallModel) searchLocalPackage() []string {
 		return []string{}
 	}
 	var stdout bytes.Buffer
-	cmd := exec.Command("helm", "search", "repo", m.Inputs[installChartNameStep].Value())
+	cmd := exec.Command("helm", "search", "repo", m.Inputs[installChartNameStep].Value(), "--output", "json")
 	cmd.Stdout = &stdout
 	err := cmd.Run()
 	if err != nil {
 		return []string{}
 	}
-	results := strings.Split(stdout.String(), "\n")
-	results = results[1 : len(results)-1]
-
+	var pkgs []types.Pkg
+	err = json.Unmarshal(stdout.Bytes(), &pkgs)
+	if err != nil {
+		return []string{}
+	}
 	var suggestions []string
-	for _, row := range results {
-		chart := strings.Fields(row)
-		suggestions = append(suggestions, chart[0])
+	for _, p := range pkgs {
+		suggestions = append(suggestions, p.Name)
 	}
 
-	m.Inputs[installChartNameStep].SetSuggestions(suggestions)
 	return suggestions
 }
 
 func (m InstallModel) searchLocalPackageVersion() []string {
 	var stdout bytes.Buffer
-	cmd := exec.Command("helm", "search", "repo", "--regexp", "\v"+m.Inputs[installChartNameStep].Value()+"\v", "--versions")
+	cmd := exec.Command("helm", "search", "repo", "--regexp", "\v"+m.Inputs[installChartNameStep].Value()+"\v", "--versions", "--output", "json")
 	cmd.Stdout = &stdout
 	err := cmd.Run()
 	if err != nil {
 		return []string{}
 	}
-	results := strings.Split(stdout.String(), "\n")
-	results = results[1 : len(results)-1]
+	var pkgs []types.Pkg
+	err = json.Unmarshal(stdout.Bytes(), &pkgs)
+	if err != nil {
+		return []string{}
+	}
 
 	var suggestions []string
-	for _, row := range results {
-		chart := strings.Fields(row)
-		suggestions = append(suggestions, chart[1])
+	for _, pkg := range pkgs {
+		suggestions = append(suggestions, pkg.Version)
 	}
 
 	m.Inputs[installChartNameStep].SetSuggestions(suggestions)

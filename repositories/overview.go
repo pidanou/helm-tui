@@ -2,10 +2,10 @@ package repositories
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os/exec"
-	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/table"
@@ -310,7 +310,7 @@ func (m Model) renderDefaultValueView() string {
 
 func (m Model) list() tea.Msg {
 	var stdout bytes.Buffer
-	releases := []table.Row{}
+	repositories := []table.Row{}
 
 	// Create the command
 	cmd := exec.Command("helm", "repo", "update")
@@ -319,7 +319,7 @@ func (m Model) list() tea.Msg {
 	if err != nil {
 		return types.ListRepoMsg{Err: err}
 	}
-	cmd = exec.Command("helm", "repo", "ls")
+	cmd = exec.Command("helm", "repo", "ls", "--output", "json")
 	cmd.Stdout = &stdout
 
 	// Run the command
@@ -328,18 +328,17 @@ func (m Model) list() tea.Msg {
 		return types.ListRepoMsg{Err: err}
 	}
 
-	lines := strings.Split(stdout.String(), "\n")
-	if len(lines) <= 1 {
-		return types.ListRepoMsg{Content: releases}
+	var repos []types.Repository
+	err = json.Unmarshal(stdout.Bytes(), &repos)
+	if err != nil {
+		return []string{}
 	}
 
-	lines = lines[1 : len(lines)-1]
-
-	for _, line := range lines {
-		fields := strings.Fields(line)
-		releases = append(releases, fields)
+	for _, repo := range repos {
+		row := []string{repo.Name, repo.URL}
+		repositories = append(repositories, row)
 	}
-	return types.ListRepoMsg{Content: releases, Err: nil}
+	return types.ListRepoMsg{Content: repositories, Err: nil}
 }
 
 func (m Model) update() tea.Msg {
@@ -388,7 +387,7 @@ func (m Model) searchPackages() tea.Msg {
 	}
 
 	// Create the command
-	cmd := exec.Command("helm", "search", "repo", fmt.Sprintf("%s/", m.tables[listView].SelectedRow()[0]))
+	cmd := exec.Command("helm", "search", "repo", fmt.Sprintf("%s/", m.tables[listView].SelectedRow()[0]), "--output", "json")
 	cmd.Stdout = &stdout
 
 	// Run the command
@@ -396,60 +395,45 @@ func (m Model) searchPackages() tea.Msg {
 	if err != nil {
 		return types.PackagesMsg{Content: releases, Err: err}
 	}
-
-	lines := strings.Split(stdout.String(), "\n")
-	if len(lines) <= 1 {
-		return types.PackagesMsg{Content: releases}
+	var pkgs []types.Pkg
+	err = json.Unmarshal(stdout.Bytes(), &pkgs)
+	if err != nil {
+		return []string{}
 	}
 
-	lines = lines[1 : len(lines)-1]
-
-	for _, line := range lines {
-		fields := strings.Fields(line)
-		if len(fields) == 0 {
-			continue
-		}
-		nameField := fields[0]
-		releases = append(releases, table.Row{nameField})
+	for _, pkg := range pkgs {
+		releases = append(releases, table.Row{pkg.Name})
 	}
 	return types.PackagesMsg{Content: releases, Err: nil}
 }
 
 func (m Model) searchPackageVersions() tea.Msg {
 	var stdout bytes.Buffer
-	releases := []table.Row{}
+	versions := []table.Row{}
 	if m.tables[packagesView].SelectedRow() == nil {
-		return types.PackageVersionsMsg{Content: releases, Err: errors.New("no package selected")}
+		return types.PackageVersionsMsg{Content: versions, Err: errors.New("no package selected")}
 	}
 
 	// Create the command
-	cmd := exec.Command("helm", "search", "repo", fmt.Sprintf("%s", m.tables[packagesView].SelectedRow()[0]), "--versions")
+	cmd := exec.Command("helm", "search", "repo", fmt.Sprintf("%s", m.tables[packagesView].SelectedRow()[0]), "--versions", "--output", "json")
 	cmd.Stdout = &stdout
 
 	// Run the command
 	err := cmd.Run()
 	if err != nil {
-		return types.PackageVersionsMsg{Content: releases, Err: err}
+		return types.PackageVersionsMsg{Content: versions, Err: err}
+	}
+	var pkgs []types.Pkg
+	err = json.Unmarshal(stdout.Bytes(), &pkgs)
+	if err != nil {
+		return []string{}
 	}
 
-	lines := strings.Split(stdout.String(), "\n")
-	if len(lines) <= 1 {
-		return types.PackageVersionsMsg{Content: releases}
+	for _, pkg := range pkgs {
+		versions = append(versions, table.Row{pkg.Version, pkg.AppVersion, pkg.Description})
 	}
 
-	lines = lines[1 : len(lines)-1]
-
-	for _, line := range lines {
-		allFields := strings.Fields(line)
-		if len(allFields) == 0 {
-			continue
-		}
-		joinedDescription := strings.Join(allFields[3:], " ")
-		fields := allFields[1:3]
-		fields = append(fields, joinedDescription)
-		releases = append(releases, fields)
-	}
-	return types.PackageVersionsMsg{Content: releases, Err: nil}
+	return types.PackageVersionsMsg{Content: versions, Err: nil}
 }
 
 func (m Model) getDefaultValue() tea.Msg {
@@ -460,6 +444,5 @@ func (m Model) getDefaultValue() tea.Msg {
 	if err != nil {
 		return types.DefaultValueMsg{Content: "Unable to get default values"}
 	}
-	helpers.Println(stdout.String())
 	return types.DefaultValueMsg{Content: stdout.String()}
 }

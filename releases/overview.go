@@ -2,7 +2,9 @@ package releases
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"os/exec"
 	"strings"
 
@@ -438,10 +440,10 @@ func (m Model) renderManifestView() string {
 
 func (m Model) list() tea.Msg {
 	var stdout bytes.Buffer
-	var releases []table.Row
+	var releases = []table.Row{}
 
 	// Create the command
-	cmd := exec.Command("helm", "ls", "--all-namespaces")
+	cmd := exec.Command("helm", "ls", "--all-namespaces", "--output", "json")
 	cmd.Stdout = &stdout
 
 	// Run the command
@@ -449,23 +451,15 @@ func (m Model) list() tea.Msg {
 	if err != nil {
 		return types.ListReleasesMsg{Err: err}
 	}
-
-	lines := strings.Split(stdout.String(), "\n")
-	if len(lines) <= 1 {
+	var rls []types.Release
+	err = json.Unmarshal(stdout.Bytes(), &rls)
+	if err != nil {
 		return types.ListReleasesMsg{Content: releases}
 	}
 
-	// remove header and empty last line
-	lines = lines[1 : len(lines)-1]
-
-	for _, line := range lines {
-		fields := strings.Fields(line)
-		updated := strings.Join(fields[3:7], " ")      // Join the parts that belong to the updated field
-		remainingFields := append(fields[:3], updated) // Keep the first 3 columns and append the updated field
-
-		// Add the rest of the fields after the updated part
-		remainingFields = append(remainingFields, fields[7:]...)
-		releases = append(releases, remainingFields)
+	for _, rel := range rls {
+		row := []string{rel.Name, rel.Namespace, rel.Revision, rel.Updated, rel.Status, rel.Chart, rel.AppVersion}
+		releases = append(releases, row)
 	}
 	return types.ListReleasesMsg{Content: releases, Err: nil}
 }
@@ -478,7 +472,7 @@ func (m *Model) history() tea.Msg {
 	}
 
 	// Create the command
-	cmd := exec.Command("helm", "history", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1])
+	cmd := exec.Command("helm", "history", m.releaseTable.SelectedRow()[0], "--namespace", m.releaseTable.SelectedRow()[1], "--output", "json")
 	cmd.Stdout = &stdout
 
 	// Run the command
@@ -486,26 +480,18 @@ func (m *Model) history() tea.Msg {
 	if err != nil {
 		return types.HistoryMsg{Err: err}
 	}
-
-	lines := strings.Split(stdout.String(), "\n")
-	if len(lines) <= 1 {
-		return types.HistoryMsg{Err: errors.New("no history found")}
+	var history []types.History
+	var rows = []table.Row{}
+	err = json.Unmarshal(stdout.Bytes(), &history)
+	if err != nil {
+		return types.HistoryMsg{Content: rows}
 	}
 
-	// remove header and empty last line
-	lines = lines[1 : len(lines)-1]
-
-	var history []table.Row
-	for _, line := range lines {
-		fields := strings.Fields(line)
-		updated := strings.Join(fields[1:6], " ")
-		description := strings.Join(fields[9:], " ")
-		remainingFields := append(fields[:1], updated)
-		remainingFields = append(remainingFields, fields[6:9]...)
-		remainingFields = append(remainingFields, description)
-		history = append(history, remainingFields)
+	for _, line := range history {
+		row := []string{fmt.Sprint(line.Revision), line.Updated, line.Status, line.Chart, line.AppVersion, line.Description}
+		rows = append(rows, row)
 	}
-	return types.HistoryMsg{Content: history, Err: nil}
+	return types.HistoryMsg{Content: rows, Err: nil}
 }
 
 func (m *Model) delete() tea.Msg {
@@ -604,7 +590,7 @@ func (m Model) getValues() tea.Msg {
 	}
 	lines := strings.Split(stdout.String(), "\n")
 	if len(lines) <= 1 {
-		return types.ValuesMsg{Err: errors.New("no history found")}
+		return types.ValuesMsg{Err: errors.New("no values found")}
 	}
 	lines = lines[1:]
 
