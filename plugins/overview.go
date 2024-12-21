@@ -29,7 +29,7 @@ func InitModel() PluginsModel {
 	table := components.GenerateTable()
 	input := textinput.New()
 	input.Placeholder = "Enter plugin path/url"
-	return PluginsModel{pluginsTable: table, help: help.New(), keys: overviewKeys, installPluginInput: textinput.New()}
+	return PluginsModel{pluginsTable: table, help: help.New(), keys: overviewKeys, installPluginInput: input}
 }
 
 func (m PluginsModel) Init() tea.Cmd {
@@ -49,6 +49,7 @@ func (m PluginsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.pluginsTable.SetRows(msg.Content)
 	case types.PluginInstallMsg:
 		m.installPluginInput.Blur()
+		m.installPluginInput.SetValue("")
 		return m, m.list
 	case types.PluginUninstallMsg:
 		return m, m.list
