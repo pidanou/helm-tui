@@ -3,6 +3,8 @@ package components
 import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/pidanou/helmtui/styles"
 )
 
 type ColumnDefinition struct {
@@ -49,4 +51,41 @@ func SetTable(t *table.Model, cols []ColumnDefinition, targetWidth int) tea.Cmd 
 	t.SetColumns(columns)
 	t.SetWidth(targetWidth)
 	return nil
+}
+
+func GenerateTable() table.Model {
+	t := table.New()
+	s := table.DefaultStyles()
+	k := table.DefaultKeyMap()
+	k.HalfPageUp.Unbind()
+	k.PageDown.Unbind()
+	k.HalfPageDown.Unbind()
+	k.HalfPageDown.Unbind()
+	k.GotoBottom.Unbind()
+	k.GotoTop.Unbind()
+	s.Header = s.Header.
+		BorderStyle(styles.Border).
+		BorderForeground(lipgloss.Color("240")).
+		BorderBottom(true).
+		Bold(true)
+	s.Selected = s.Selected.
+		Foreground(lipgloss.Color("229")).
+		Background(lipgloss.Color("57")).
+		Bold(false)
+
+	t.SetStyles(s)
+	t.KeyMap = k
+	return t
+}
+
+func RenderTable(t table.Model, height int, width int) string {
+	var topBorder string
+	t.SetHeight(height)
+	t.SetWidth(width)
+	view := t.View()
+	var baseStyle lipgloss.Style
+	topBorder = styles.GenerateTopBorderWithTitle(" Releases ", t.Width(), styles.Border, styles.InactiveStyle)
+	baseStyle = styles.InactiveStyle.Border(styles.Border, false, true, true)
+	view = baseStyle.Render(view)
+	return lipgloss.JoinVertical(lipgloss.Left, topBorder, view)
 }

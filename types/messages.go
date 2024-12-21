@@ -105,3 +105,20 @@ type DefaultValueMsg struct {
 	Content string
 	Err     error
 }
+
+type PluginsListMsg struct {
+	Content []table.Row
+	Err     error
+}
+
+type PluginInstallMsg struct {
+	Err error
+}
+
+type PluginUpdateMsg struct {
+	Err error
+}
+
+type PluginUninstallMsg struct {
+	Err error
+}

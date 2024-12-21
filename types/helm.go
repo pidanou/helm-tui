@@ -30,3 +30,9 @@ type Repository struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
 }
+
+type Plugin struct {
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	Description string `json:"description"`
+}
