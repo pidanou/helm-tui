@@ -39,14 +39,9 @@ fi
 initArch() {
   ARCH=$(uname -m)
   case $ARCH in
-  armv5*) ARCH="armv5" ;;
-  armv6*) ARCH="armv6" ;;
-  armv7*) ARCH="armv7" ;;
   aarch64) ARCH="arm64" ;;
-  x86) ARCH="386" ;;
-  x86_64) ARCH="amd64" ;;
-  i686) ARCH="386" ;;
-  i386) ARCH="386" ;;
+  x86_64) ARCH="x86_64" ;;
+  i386) ARCH="i386" ;;
   esac
 }
 
@@ -55,23 +50,23 @@ initOS() {
   OS=$(uname -s)
 
   case "$OS" in
-  Windows_NT) OS='windows' ;;
+  Windows_NT) OS='Windows' ;;
   # Msys support
-  MSYS*) OS='windows' ;;
+  MSYS*) OS='Windows' ;;
   # Minimalist GNU for Windows
-  MINGW*) OS='windows' ;;
-  CYGWIN*) OS='windows' ;;
-  Darwin) OS='macos' ;;
-  Linux) OS='linux' ;;
+  MINGW*) OS='Windows' ;;
+  CYGWIN*) OS='Windows' ;;
+  Darwin) OS='Darwin' ;;
+  Linux) OS='Linux' ;;
   esac
 }
 
 # verifySupported checks that the os/arch combination is supported for
 # binary builds.
 verifySupported() {
-  supported="linux-amd64\nlinux-arm64\nfreebsd-amd64\nmacos-amd64\nmacos-arm64\nwindows-amd64"
-  if ! echo "${supported}" | grep -q "${OS}-${ARCH}"; then
-    echo "No prebuild binary for ${OS}-${ARCH}."
+  supported="Linux_x86_64\nLinux_arm64\nLinux_i386\nDarwin_x86_64\nDarwin_arm64\nWindows_arm64\nWindows_i386\nWindows_x86_64"
+  if ! echo "${supported}" | grep -q "${OS}_${ARCH}"; then
+    echo "No prebuild binary for ${OS}_${ARCH}."
     exit 1
   fi
 
@@ -87,9 +82,9 @@ verifySupported() {
 getDownloadURL() {
   version=$(git -C "$HELM_PLUGIN_DIR" describe --tags --exact-match 2>/dev/null || :)
   if [ "$SCRIPT_MODE" = "install" ] && [ -n "$version" ]; then
-    DOWNLOAD_URL="https://github.com/$PROJECT_GH/releases/download/$version/helm-tui-$OS-$ARCH.tgz"
+    DOWNLOAD_URL="https://github.com/$PROJECT_GH/releases/download/$version/helm-tui_${OS}_${ARCH}.tar.gz"
   else
-    DOWNLOAD_URL="https://github.com/$PROJECT_GH/releases/latest/download/helm-tui-$OS-$ARCH.tgz"
+    DOWNLOAD_URL="https://github.com/$PROJECT_GH/releases/latest/download/helm-tui_${OS}_${ARCH}.tar.gz"
   fi
 }
 
@@ -106,7 +101,8 @@ rmTempDir() {
 # downloadFile downloads the latest binary package and also the checksum
 # for that binary.
 downloadFile() {
-  PLUGIN_TMP_FILE="${HELM_TMP}/${PROJECT_NAME}.tgz"
+  PLUGIN_TMP_FILE="${HELM_TMP}/${PROJECT_NAME}.tar.gz"
+
   echo "Downloading $DOWNLOAD_URL"
   if
     command -v curl >/dev/null 2>&1
@@ -123,13 +119,13 @@ downloadFile() {
 # installs it.
 installFile() {
   tar xzf "$PLUGIN_TMP_FILE" -C "$HELM_TMP"
-  HELM_TMP_BIN="$HELM_TMP/tui/bin/tui"
+  HELM_TMP_BIN="$HELM_TMP/helm-tui"
   if [ "${OS}" = "windows" ]; then
     HELM_TMP_BIN="$HELM_TMP_BIN.exe"
   fi
   echo "Preparing to install into ${HELM_PLUGIN_DIR}"
-  mkdir -p "$HELM_PLUGIN_DIR/bin"
-  cp "$HELM_TMP_BIN" "$HELM_PLUGIN_DIR/bin"
+  mkdir -p "${HELM_PLUGIN_DIR}/bin"
+  cp "$HELM_TMP_BIN" "$HELM_PLUGIN_DIR/bin/helm-tui"
 }
 
 # exit_trap is executed if on exit (error or not).
@@ -138,7 +134,7 @@ exit_trap() {
   rmTempDir
   if [ "$result" != "0" ]; then
     echo "Failed to install $PROJECT_NAME"
-    printf '\tFor support, go to https://github.com/databus23/helm-tui.\n'
+    printf '\tFor support, go to https://github.com/pidanou/helm-tui.\n'
   fi
   exit $result
 }

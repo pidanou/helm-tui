@@ -5,7 +5,7 @@ version: "0.5.0"
 usage: "Simple terminal UI for Helm"
 description: "Simple terminal UI for Helm"
 useTunnel: true
-command: "$HELM_PLUGIN_DIR/bin/helm-tui"
+command: "${HELM_PLUGIN_DIR}/bin/helm-tui"
 hooks:
-  install: "$HELM_PLUGIN_DIR/install-binary.sh"
-  update: "$HELM_PLUGIN_DIR/install-binary.sh -u"
+  install: "${HELM_PLUGIN_DIR}/install-binary.sh"
+  update: "${HELM_PLUGIN_DIR}/install-binary.sh -u"
