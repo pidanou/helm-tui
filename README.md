@@ -31,12 +31,12 @@ Helm-tui is a terminal-based UI application to manage your Helm releases, charts
    go run .
    ```
 
-## How to Install (WIP)
+## How to Install
 
 Install Helm-tui using `helm plugin install`:
 
 ```bash
-helm plugin install github.com/pidanou/helm-tui
+helm plugin install https://github.com/pidanou/helm-tui
 ```
 
 Once installed, you can run `helm tui` directly from your terminal.
