@@ -2,9 +2,9 @@ package plugins
 
 import (
 	"github.com/charmbracelet/lipgloss"
-	"github.com/pidanou/helmtui/components"
-	"github.com/pidanou/helmtui/helpers"
-	"github.com/pidanou/helmtui/styles"
+	"github.com/pidanou/helm-tui/components"
+	"github.com/pidanou/helm-tui/helpers"
+	"github.com/pidanou/helm-tui/styles"
 )
 
 func (m PluginsModel) View() string {

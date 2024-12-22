@@ -6,8 +6,8 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/pidanou/helmtui/components"
-	"github.com/pidanou/helmtui/types"
+	"github.com/pidanou/helm-tui/components"
+	"github.com/pidanou/helm-tui/types"
 )
 
 type HubModel struct {

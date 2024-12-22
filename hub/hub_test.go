@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/pidanou/helmtui/types"
+	"github.com/pidanou/helm-tui/types"
 )
 
 // Test the initialization of the HubModel

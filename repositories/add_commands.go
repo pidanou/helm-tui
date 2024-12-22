@@ -5,7 +5,7 @@ import (
 	"os/exec"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/pidanou/helmtui/types"
+	"github.com/pidanou/helm-tui/types"
 )
 
 func (m *AddModel) updateInputs(msg tea.Msg) tea.Cmd {

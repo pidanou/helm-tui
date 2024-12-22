@@ -1,4 +1,4 @@
-module github.com/pidanou/helmtui
+module github.com/pidanou/helm-tui
 
 go 1.22.3
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/pidanou/helmtui/helpers"
-	"github.com/pidanou/helmtui/styles"
+	"github.com/pidanou/helm-tui/helpers"
+	"github.com/pidanou/helm-tui/styles"
 )
 
 func (m UpgradeModel) View() string {

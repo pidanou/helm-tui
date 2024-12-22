@@ -8,13 +8,13 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/pidanou/helmtui/helpers"
-	"github.com/pidanou/helmtui/hub"
-	"github.com/pidanou/helmtui/plugins"
-	"github.com/pidanou/helmtui/releases"
-	"github.com/pidanou/helmtui/repositories"
-	"github.com/pidanou/helmtui/styles"
-	"github.com/pidanou/helmtui/types"
+	"github.com/pidanou/helm-tui/helpers"
+	"github.com/pidanou/helm-tui/hub"
+	"github.com/pidanou/helm-tui/plugins"
+	"github.com/pidanou/helm-tui/releases"
+	"github.com/pidanou/helm-tui/repositories"
+	"github.com/pidanou/helm-tui/styles"
+	"github.com/pidanou/helm-tui/types"
 )
 
 type tabIndex uint
@@ -167,7 +167,7 @@ func createWorkingDir() tea.Msg {
 	if err != nil {
 		return types.InitAppMsg{Err: err}
 	}
-	workingDir := path.Join(homeDir, ".helmtui")
+	workingDir := path.Join(homeDir, ".helm-tui")
 	err = os.MkdirAll(workingDir, 0755)
 	if err != nil {
 		return types.InitAppMsg{Err: err}

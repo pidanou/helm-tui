@@ -4,7 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/pidanou/helmtui/styles"
+	"github.com/pidanou/helm-tui/styles"
 )
 
 type ColumnDefinition struct {

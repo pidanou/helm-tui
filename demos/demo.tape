@@ -1,13 +1,13 @@
 Output overview.gif
 
-Require helmtui
+Require helm-tui
 
 Set Shell "bash"
 Set FontSize 14
 Set Width 1200
 Set Height 600
 
-Type "helmtui" Sleep 300ms Enter
+Type "helm-tui" Sleep 300ms Enter
 Sleep 1s
 Enter
 Sleep 1s

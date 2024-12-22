@@ -1,7 +1,7 @@
-# Makefile for Helmtui
+# Makefile for Helm-tui
 
 # Go build settings
-BINARY_NAME = helmtui
+BINARY_NAME = helm-tui
 SOURCE_DIR = .
 BUILD_DIR = ./bin
 

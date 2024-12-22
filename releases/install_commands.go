@@ -8,8 +8,8 @@ import (
 	"os/exec"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/pidanou/helmtui/helpers"
-	"github.com/pidanou/helmtui/types"
+	"github.com/pidanou/helm-tui/helpers"
+	"github.com/pidanou/helm-tui/types"
 )
 
 func (m InstallModel) installPackage(mode string) tea.Cmd {

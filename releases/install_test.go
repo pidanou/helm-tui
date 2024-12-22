@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/pidanou/helmtui/types"
+	"github.com/pidanou/helm-tui/types"
 	"github.com/stretchr/testify/assert"
 )
 

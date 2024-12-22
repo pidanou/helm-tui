@@ -1,8 +1,8 @@
-# Helmtui
+# Helm-tui
 
 <img alt="Demo of Soramail" src="demos/overview.gif" width="1200" />
 
-Helmtui is a terminal-based UI application to manage your Helm releases, charts, repositories, and plugins with ease.
+Helm-tui is a terminal-based UI application to manage your Helm releases, charts, repositories, and plugins with ease.
 
 ## Features
 
@@ -12,15 +12,18 @@ Helmtui is a terminal-based UI application to manage your Helm releases, charts,
 ## Requirements
 
 - [Helm 3](https://helm.sh/docs/intro/install/)
-- [Go 1.18+](https://go.dev/doc/install)
+
+### Optional
+
+- [Go 1.22+](https://go.dev/doc/install)
 
 ## How to Use
 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/pidanou/helmtui.git
-   cd helmtui
+   git clone https://github.com/pidanou/helm-tui.git
+   cd helm-tui
    ```
 
 2. Run the app directly using:
@@ -28,15 +31,15 @@ Helmtui is a terminal-based UI application to manage your Helm releases, charts,
    go run .
    ```
 
-## How to Install
+## How to Install (WIP)
 
-Install Helmtui using `go install`:
+Install Helm-tui using `helm plugin install`:
 
 ```bash
-go install github.com/pidanou/helmtui@latest
+helm plugin install github.com/pidanou/helm-tui
 ```
 
-Once installed, you can run `helmtui` directly from your terminal.
+Once installed, you can run `helm tui` directly from your terminal.
 
 ## Contributing
 

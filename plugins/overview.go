@@ -6,8 +6,8 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/pidanou/helmtui/components"
-	"github.com/pidanou/helmtui/types"
+	"github.com/pidanou/helm-tui/components"
+	"github.com/pidanou/helm-tui/types"
 )
 
 var pluginsCols = []components.ColumnDefinition{

@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/pidanou/helmtui/types"
+	"github.com/pidanou/helm-tui/types"
 )
 
 func (m Model) list() tea.Msg {

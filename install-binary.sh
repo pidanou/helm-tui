@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# Shamelessly copied from https://github.com/databus23/helm-tui
+# Shamelessly copied from https://github.com/databus23/helm-diff
 
 PROJECT_NAME="helm-tui"
 PROJECT_GH="pidanou/$PROJECT_NAME"

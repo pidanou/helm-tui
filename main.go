@@ -6,7 +6,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/pidanou/helmtui/helpers"
+	"github.com/pidanou/helm-tui/helpers"
 )
 
 func main() {
