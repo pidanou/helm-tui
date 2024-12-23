@@ -9,7 +9,7 @@ import (
 
 // TestCommonKeys verifies that the CommonKeys are correctly initialized.
 func TestCommonKeys(t *testing.T) {
-	expectedMenuNext := key.NewBinding(key.WithKeys("tab"), key.WithHelp("←/→", "Change panel"))
+	expectedMenuNext := key.NewBinding(key.WithKeys("[", "]"), key.WithHelp("[/]", "Change panel"))
 	expectedQuit := key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "Quit"))
 
 	assert.Equal(t, expectedMenuNext, CommonKeys.MenuNext, "MenuNext keybinding should match")
