@@ -86,15 +86,14 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
-			cleanup()
 			return m, tea.Quit
-		case "right":
+		case "]":
 			if m.state == pluginsTab {
 				m.state = 0
 			} else {
 				m.state++
 			}
-		case "left":
+		case "[":
 			if m.state == releasesTab {
 				m.state = pluginsTab
 			} else {
@@ -174,8 +173,4 @@ func createWorkingDir() tea.Msg {
 	}
 	helpers.UserDir = workingDir
 	return types.InitAppMsg{Err: nil}
-}
-
-func cleanup() {
-	_ = os.RemoveAll(helpers.UserDir)
 }

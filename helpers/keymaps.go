@@ -24,7 +24,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 }
 
 var CommonKeys = keyMap{
-	MenuNext: key.NewBinding(key.WithKeys("tab"), key.WithHelp("←/→", "Change panel")),
+	MenuNext: key.NewBinding(key.WithKeys("[", "]"), key.WithHelp("[/]", "Change panel")),
 	Quit:     key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "Quit")),
 }
 

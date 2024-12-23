@@ -49,7 +49,7 @@ var historyKeys = keyMap{
 		key.WithHelp("D", "Delete release"),
 	),
 	Upgrade:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Upgrade release")),
-	ChangeTab: key.NewBinding(key.WithKeys("tab", "shift+tab"), key.WithHelp("tab/shift+tab", "Navigate tabs")),
+	ChangeTab: key.NewBinding(key.WithKeys("h", "l", "right", "left"), key.WithHelp("hl/←→", "Navigate tabs")),
 	Back:      key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Back")),
 }
 
@@ -60,7 +60,7 @@ var readOnlyKeys = keyMap{
 		key.WithHelp("D", "Delete release"),
 	),
 	Upgrade:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Upgrade release")),
-	ChangeTab: key.NewBinding(key.WithKeys("tab", "shift+tab"), key.WithHelp("tab/shift+tab", "Navigate tabs")),
+	ChangeTab: key.NewBinding(key.WithKeys("h", "l", "right", "left"), key.WithHelp("hl/←→", "Navigate tabs")),
 	Back:      key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Back")),
 }
 

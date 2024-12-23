@@ -177,7 +177,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case packagesView:
 				cmds = append(cmds, m.searchPackageVersions)
 			}
-		case "tab", "l", "enter":
+		case "l", "right":
 			switch m.selectedView {
 			case versionsView:
 			default:
@@ -186,7 +186,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.FocusOnlyTable(m.selectedView)
 		case "D":
 			cmds = append(cmds, m.remove)
-		case "shift+tab", "h":
+		case "h", "left":
 			switch m.selectedView {
 			case listView:
 			default:

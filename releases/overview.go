@@ -261,7 +261,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.historyTable.Focus()
 				cmds = append(cmds, m.history, m.getNotes, m.getMetadata, m.getHooks, m.getValues, m.getManifest)
 			}
-		case "tab":
+		case "l", "right":
 			switch m.selectedView {
 			case releasesView:
 			case manifestView:
@@ -269,7 +269,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			default:
 				m.selectedView++
 			}
-		case "shift+tab":
+		case "h", "left":
 			switch m.selectedView {
 			case releasesView:
 			case historyView:
