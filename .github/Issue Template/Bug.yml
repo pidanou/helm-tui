@@ -31,7 +31,8 @@ body:
     id: How to reproduce
     attributes:
       label: Detail steps on how to reproduce
-      placeholder: Step 1: ..., Step 2: ...
+      placeholder: |
+        Step 1: ..., Step 2: ...
     validations:
       required: true
   - type: textarea
@@ -48,6 +49,14 @@ body:
       label: Hardware Configuration
       description: Describe your hardware-config, including the operating system, CPU, RAM, etc.
       placeholder: e.g., Windows 10, Intel i5, 8GB RAM
+    validations:
+      required: true
+  - type: textarea
+    id: terminal-shell
+    attributes:
+      label: Terminal and Shell Type
+      description: Specify the terminal and shell you are using to run the project.
+      placeholder: e.g.,  Windows Command Prompt, PowerShell, Bash
     validations:
       required: true
   - type: textarea
