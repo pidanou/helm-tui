@@ -1,0 +1,29 @@
+name: Documentation Update
+description: Propose an update or fix to the project's documentation.
+labels: [documentation]
+projects: ["octo-org/1", "octo-org/44"]
+assignees:
+  - octocat
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this report!
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details
+      description: How can we get in touch with you if we need more info?
+      placeholder: ex. email@example.com, github handle, etc.
+    validations:
+      required: false
+  - type: textarea
+    id: documentation-section
+    attributes:
+      label: Documentation section
+      placeholder: Which section of the documentation needs updating?
+  - type: textarea
+    id: suggested-improvement
+    attributes:
+      label: Suggested improvement/update
+      placeholder: Details of proposed update(s).

@@ -1,0 +1,75 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in the project.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+projects: ["octo-org/1", "octo-org/44"]
+assignees:
+  - octocat
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details
+      description: How can we get in touch with you if we need more info?
+      placeholder: ex. email@example.com, github handle, etc.
+    validations:
+      required: false
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: what went wrong?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+      value: "A bug was encountered!"
+    validations:
+      required: true
+  - type: textarea
+    id: How to reproduce
+    attributes:
+      label: Detail steps on how to reproduce
+      placeholder: |
+        Step 1: ..., Step 2: ...
+    validations:
+      required: true
+  - type: textarea
+    id: Version
+    attributes:
+      label: App Version
+      description: What version of our software are you running.
+      placeholder: e.g., v1.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: hardware-config
+    attributes:
+      label: Hardware Configuration
+      description: Describe your hardware-config, including the operating system, CPU, RAM, etc.
+      placeholder: e.g., Windows 10, Intel i5, 8GB RAM
+    validations:
+      required: true
+  - type: textarea
+    id: terminal-shell
+    attributes:
+      label: Terminal and Shell Type
+      description: Specify the terminal and shell you are using to run the project.
+      placeholder: e.g.,  Windows Command Prompt, PowerShell, Bash
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](./code_of_conduct.md). 
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
