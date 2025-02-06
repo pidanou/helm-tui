@@ -39,7 +39,14 @@ Install Helm-tui using `helm plugin install`:
 helm plugin install https://github.com/pidanou/helm-tui
 ```
 
+
 Once installed, you can run `helm tui` directly from your terminal.
+
+```bash
+helm plugin install https://github.com/pidanou/helm-tui
+```
+
+Once installed, you can run `helm-tui` directly from your terminal.
 
 ## Contributing
 
