@@ -45,7 +45,7 @@ Once installed, you can run `helm tui` directly from your terminal.
 ### Install using Go:
 
 ```bash
-go install https://github.com/pidanou/helm-tui@latest
+go install github.com/pidanou/helm-tui@latest
 ```
 
 Once installed, you can run `helm-tui` directly from your terminal.
