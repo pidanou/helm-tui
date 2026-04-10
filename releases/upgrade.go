@@ -36,7 +36,6 @@ type UpgradeModel struct {
 	width       int
 	height      int
 	help        help.Model
-	keys        keymaps.ReleaseKeyMap
 	tag         int
 }
 
@@ -46,7 +45,7 @@ func InitUpgradeModel() UpgradeModel {
 	value := textinput.New()
 	confirm := textinput.New()
 	inputs := []textinput.Model{chart, version, value, confirm}
-	m := UpgradeModel{upgradeStep: upgradeReleaseChartStep, Inputs: inputs, help: help.New(), keys: keymaps.ReleaseUpgradeKeys}
+	m := UpgradeModel{upgradeStep: upgradeReleaseChartStep, Inputs: inputs, help: help.New()}
 	m.Inputs[upgradeReleaseChartStep].ShowSuggestions = true
 	m.Inputs[upgradeReleaseVersionStep].ShowSuggestions = true
 	return m
@@ -93,8 +92,8 @@ func (m UpgradeModel) Update(msg tea.Msg) (UpgradeModel, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
 		m.tag++
-		switch msg.String() {
-		case "enter":
+		switch {
+		case keymaps.Contains(keymaps.DefaultConfig.Release.NextStep, msg.String()):
 			if m.upgradeStep == upgradeReleaseConfirmStep {
 				m.upgradeStep = 0
 				cmd = m.blurAllInputs()
@@ -128,7 +127,7 @@ func (m UpgradeModel) Update(msg tea.Msg) (UpgradeModel, tea.Cmd) {
 			}
 
 			return m, tea.Batch(cmds...)
-		case "esc":
+		case keymaps.Contains(keymaps.DefaultConfig.Release.Back, msg.String()):
 			m.upgradeStep = 0
 			for i := 0; i <= len(m.Inputs)-1; i++ {
 				m.Inputs[i].Blur()

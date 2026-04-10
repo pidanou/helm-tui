@@ -1,0 +1,49 @@
+{
+  "common": {
+    "menuNext": ["]"],
+    "menuPrev": ["["],
+    "exit": ["ctrl+c"]
+  },
+  "hub": {
+    "startSearch": ["/"],
+    "sendInput": ["enter"],
+    "startAddRepo": ["a"],
+    "showValues": ["?"],
+    "cancel": ["esc"]
+  },
+  "plugin": {
+    "uninstall": ["U"],
+    "install": ["i"],
+    "confirmInstall": ["enter"],
+    "update": ["u"],
+    "cancel": ["esc"],
+    "refresh": ["r"]
+  },
+  "release": {
+    "install": ["i"],
+    "delete": ["D"],
+    "rollback": ["R"],
+    "refresh": ["r"],
+    "select": ["enter"],
+    "nextTab": ["l", "right"],
+    "prevTab": ["h", "left"],
+    "back": ["esc"],
+    "upgrade": ["u"],
+    "cancel": ["esc"],
+    "nextStep": ["enter"]
+  },
+  "repository": {
+    "delete": ["D"],
+    "refresh": ["r"],
+    "up": ["k", "up"],
+    "down": ["j", "down"],
+    "left": ["h", "left"],
+    "right": ["l", "right"],
+    "update": ["u"],
+    "install": ["i"],
+    "select": ["enter"],
+    "cancel": ["esc"],
+    "nextStep": ["enter"],
+    "showPackageDefaultValues": ["?"]
+  }
+}

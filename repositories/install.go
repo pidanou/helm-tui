@@ -42,7 +42,7 @@ func InitInstallModel(chart, version string) InstallModel {
 	value := textinput.New()
 	confirm := textinput.New()
 	inputs := []textinput.Model{name, namespace, value, confirm}
-	m := InstallModel{installStep: nameStep, Inputs: inputs, help: help.New(), Chart: chart, Version: version, keys: keymaps.RepositoriesInstallKeys}
+	m := InstallModel{installStep: nameStep, Inputs: inputs, help: help.New(), Chart: chart, Version: version}
 	return m
 }
 
@@ -84,8 +84,8 @@ func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
 
 		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "enter":
+		switch {
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.NextStep, msg.String()):
 			if m.installStep == confirmStep {
 				m.installStep = 0
 
@@ -119,7 +119,7 @@ func (m InstallModel) Update(msg tea.Msg) (InstallModel, tea.Cmd) {
 			}
 
 			return m, tea.Batch(cmds...)
-		case "esc":
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.Cancel, msg.String()):
 			m.installStep = 0
 			for i := 0; i <= len(m.Inputs)-1; i++ {
 				m.Inputs[i].Blur()

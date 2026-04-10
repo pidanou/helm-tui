@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pidanou/helm-tui/components"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/types"
 )
 
@@ -45,7 +46,7 @@ func InitModel() tea.Model {
 		view:           searchView,
 		repoAddInput:   textinput.New(),
 	}
-	m.searchBar.Placeholder = "/ to Search a package"
+	m.searchBar.Placeholder = "Search a package"
 	m.repoAddInput.Placeholder = "Enter local repository name"
 	return m
 }
@@ -73,21 +74,21 @@ func (m HubModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.repoAddInput.SetValue("")
 		m.repoAddInput.Blur()
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "a":
+		switch {
+		case keymaps.Contains(keymaps.DefaultConfig.Hub.StartAddRepo, msg.String()):
 			if !m.repoAddInput.Focused() && !m.searchBar.Focused() {
 				m.resultTable.Blur()
 				m.searchBar.Blur()
 				cmds = append(cmds, m.repoAddInput.Focus())
 				return m, tea.Batch(cmds...)
 			}
-		case "/":
+		case keymaps.Contains(keymaps.DefaultConfig.Hub.StartSearch, msg.String()):
 			if m.view == searchView {
 				m.resultTable.Blur()
 				cmds = append(cmds, m.searchBar.Focus())
 				return m, tea.Batch(cmds...)
 			}
-		case "enter":
+		case keymaps.Contains(keymaps.DefaultConfig.Hub.SendInput, msg.String()):
 			if m.repoAddInput.Focused() {
 				cmds = append(cmds, m.addRepo)
 				return m, tea.Batch(cmds...)
@@ -98,8 +99,7 @@ func (m HubModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, m.searchHub)
 				return m, tea.Batch(cmds...)
 			}
-			m.resultTable.Focus()
-		case "v":
+		case keymaps.Contains(keymaps.DefaultConfig.Hub.ShowValues, msg.String()):
 			if m.resultTable.Focused() {
 				if m.resultTable.SelectedRow() != nil {
 					m.view = defaultValueView
@@ -107,7 +107,7 @@ func (m HubModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, tea.Batch(cmds...)
 			}
-		case "esc":
+		case keymaps.Contains(keymaps.DefaultConfig.Hub.Cancel, msg.String()):
 			m.view = searchView
 			m.repoAddInput.Blur()
 			m.defaultValueVP.GotoTop()

@@ -1,16 +1,19 @@
 package keymaps
 
-import "github.com/charmbracelet/bubbles/key"
+import (
+	"github.com/charmbracelet/bubbles/key"
+)
 
 type HubKeyMap struct {
-	AddRepo key.Binding
-	Search  key.Binding
-	Show    key.Binding
-	Cancel  key.Binding
+	StartSearch  key.Binding
+	StartAddRepo key.Binding
+	SendInput    key.Binding
+	ShowValues   key.Binding
+	Cancel       key.Binding
 }
 
 func (k HubKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.AddRepo, k.Show, k.Search, k.Cancel}
+	return []key.Binding{k.StartSearch, k.SendInput, k.StartAddRepo, k.ShowValues, k.Cancel}
 }
 
 // FullHelp returns keybindings for the expanded help view. It's part of the
@@ -20,25 +23,23 @@ func (k HubKeyMap) FullHelp() [][]key.Binding {
 }
 
 var HubDefaultKeysHelp = HubKeyMap{
-	Search: key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "Search")),
-	Show:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "Focus table")),
+	StartSearch: key.NewBinding(key.WithKeys(DefaultConfig.Hub.StartSearch...), key.WithHelp(formatHelp(DefaultConfig.Hub.StartSearch), "Search")),
 }
 
-var HubTableKeysHelp = HubKeyMap{
-	Show:    key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "Show default values")),
-	Search:  key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "Search")),
-	AddRepo: key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "Add repo")),
+var HubTableFocusedKeysHelp = HubKeyMap{
+	ShowValues:  key.NewBinding(key.WithKeys(DefaultConfig.Hub.ShowValues...), key.WithHelp(formatHelp(DefaultConfig.Hub.ShowValues), "Show default values")),
+	StartSearch: key.NewBinding(key.WithKeys(DefaultConfig.Hub.StartSearch...), key.WithHelp(formatHelp(DefaultConfig.Hub.SendInput), "Search")),
+	SendInput:   key.NewBinding(key.WithKeys(DefaultConfig.Hub.SendInput...), key.WithHelp(formatHelp(DefaultConfig.Hub.SendInput), "Add repo")),
 }
 
-var HubSearchKeyHelp = HubKeyMap{
-	Search: key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "Search")),
+var HubSearchFocusedKeyHelp = HubKeyMap{
+	SendInput: key.NewBinding(key.WithKeys(DefaultConfig.Hub.SendInput...), key.WithHelp(formatHelp(DefaultConfig.Hub.SendInput), "Search")),
 }
 
-var HubAddRepoKeyHelp = HubKeyMap{
-	Search: key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "Search")),
+var HubAddRepoFocusedKeyHelp = HubKeyMap{
+	SendInput: key.NewBinding(key.WithKeys(DefaultConfig.Hub.SendInput...), key.WithHelp(formatHelp(DefaultConfig.Hub.SendInput), "Add Repo")),
 }
 
-var HubDefaultValuesKeyHelp = HubKeyMap{
-	Search: key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "Search")),
-	Cancel: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
+var HubPackageDefaultValueKeyHelp = HubKeyMap{
+	Cancel: key.NewBinding(key.WithKeys(DefaultConfig.Hub.Cancel...), key.WithHelp(formatHelp(DefaultConfig.Hub.Cancel), "Cancel")),
 }

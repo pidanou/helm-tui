@@ -2,7 +2,6 @@ package plugins
 
 import (
 	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -21,7 +20,6 @@ type PluginsModel struct {
 	pluginsTable       table.Model
 	installPluginInput textinput.Model
 	help               help.Model
-	keys               keymaps.PluginKeyMap
 	width              int
 	height             int
 }
@@ -30,7 +28,10 @@ func InitModel() PluginsModel {
 	table := components.GenerateTable()
 	input := textinput.New()
 	input.Placeholder = "Enter plugin path/url"
-	return PluginsModel{pluginsTable: table, help: help.New(), keys: keymaps.PluginOverviewKeys, installPluginInput: input}
+	return PluginsModel{
+		pluginsTable:       table,
+		help:               help.New(),
+		installPluginInput: input}
 }
 
 func (m PluginsModel) Init() tea.Cmd {
@@ -56,23 +57,23 @@ func (m PluginsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.list
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.keys.Install):
+		case keymaps.Contains(keymaps.DefaultConfig.Plugin.Install, msg.String()):
 			cmds = append(cmds, m.installPluginInput.Focus())
 			return m, tea.Batch(cmds...)
-		case key.Matches(msg, m.keys.Uninstall):
+		case keymaps.Contains(keymaps.DefaultConfig.Plugin.Uninstall, msg.String()):
 			if !m.installPluginInput.Focused() {
 				return m, m.uninstall
 			}
-		case key.Matches(msg, m.keys.Update):
+		case keymaps.Contains(keymaps.DefaultConfig.Plugin.Update, msg.String()):
 			if !m.installPluginInput.Focused() {
 				return m, m.update
 			}
-		case key.Matches(msg, m.keys.Cancel):
+		case keymaps.Contains(keymaps.DefaultConfig.Plugin.Cancel, msg.String()):
 			m.installPluginInput.Blur()
 			return m, tea.Batch(cmds...)
-		case key.Matches(msg, m.keys.Refresh):
+		case keymaps.Contains(keymaps.DefaultConfig.Plugin.Refresh, msg.String()):
 			return m, m.list
-		case msg.String() == "enter":
+		case keymaps.Contains(keymaps.DefaultConfig.Plugin.ConfirmInstall, msg.String()):
 			if m.installPluginInput.Focused() {
 				return m, m.install
 			}

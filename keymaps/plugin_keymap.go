@@ -11,11 +11,11 @@ type PluginKeyMap struct {
 }
 
 var PluginOverviewKeys = PluginKeyMap{
-	Uninstall: key.NewBinding(key.WithKeys("U"), key.WithHelp("U", "Uninstall")),
-	Install:   key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install")),
-	Update:    key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Update")),
-	Cancel:    key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
-	Refresh:   key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "Refresh")),
+	Uninstall: key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Uninstall...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Update), "Uninstall")),
+	Install:   key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Install...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Install), "Install")),
+	Update:    key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Update...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Update), "Update")),
+	Cancel:    key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Cancel...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Cancel), "Cancel")),
+	Refresh:   key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Refresh...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Refresh), "Refresh")),
 }
 
 func (k PluginKeyMap) ShortHelp() []key.Binding {

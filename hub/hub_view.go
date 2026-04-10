@@ -2,7 +2,6 @@ package hub
 
 import (
 	"github.com/charmbracelet/lipgloss"
-	"github.com/pidanou/helm-tui/helpers"
 	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/styles"
 )
@@ -24,15 +23,15 @@ func (m HubModel) View() string {
 	helperStyle := m.help.Styles.ShortSeparator
 	helpView := m.help.View(keymaps.HubDefaultKeysHelp)
 	if m.searchBar.Focused() {
-		helpView = m.help.View(keymaps.HubSearchKeyHelp)
+		helpView = m.help.View(keymaps.HubSearchFocusedKeyHelp)
 	}
 	if m.resultTable.Focused() {
-		helpView = m.help.View(keymaps.HubTableKeysHelp)
+		helpView = m.help.View(keymaps.HubTableFocusedKeysHelp)
 	}
 	if m.repoAddInput.Focused() {
-		helpView = m.help.View(keymaps.HubAddRepoKeyHelp)
+		helpView = m.help.View(keymaps.HubAddRepoFocusedKeyHelp)
 	}
-	helpView += helperStyle.Render(" • ") + m.help.View(keymaps.CommonKeys)
+	helpView += helperStyle.Render(" • ") + m.help.View(keymaps.CommonKeysHelper)
 	style := styles.ActiveStyle.Border(styles.Border)
 	if m.repoAddInput.Focused() {
 		return header + "\n" + m.renderSearchTableView() + "\n" + style.Render(m.repoAddInput.View()) + "\n" + helpView
@@ -58,6 +57,6 @@ func (m HubModel) renderDefaultValueView() string {
 	defaultValueTopBorder := styles.GenerateTopBorderWithTitle(" Default Values ", m.defaultValueVP.Width, styles.Border, styles.InactiveStyle)
 	baseStyle := styles.InactiveStyle.Border(styles.Border, false, true, true)
 	helperStyle := m.help.Styles.ShortSeparator
-	helpView := helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
-	return lipgloss.JoinVertical(lipgloss.Top, defaultValueTopBorder, baseStyle.Render(m.defaultValueVP.View()), m.help.View(keymaps.HubDefaultValuesKeyHelp)+helpView)
+	helpView := helperStyle.Render(" • ") + m.help.View(keymaps.CommonKeysHelper)
+	return lipgloss.JoinVertical(lipgloss.Top, defaultValueTopBorder, baseStyle.Render(m.defaultValueVP.View()), m.help.View(keymaps.HubPackageDefaultValueKeyHelp)+helpView)
 }
