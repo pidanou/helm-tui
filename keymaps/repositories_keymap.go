@@ -34,8 +34,10 @@ func (k RepositoriesKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-var RespotioriesDefaultValuesKeyHelp = RepositoriesKeyMap{
-	Cancel: key.NewBinding(key.WithKeys(DefaultConfig.Repository.Cancel...), key.WithHelp(formatHelp(DefaultConfig.Repository.Cancel), "Cancel")),
+func RepositoriesDefaultValuesKeyHelp() RepositoriesKeyMap {
+	return RepositoriesKeyMap{
+		Cancel: key.NewBinding(key.WithKeys(DefaultConfig.Repository.Cancel...), key.WithHelp(formatHelp(DefaultConfig.Repository.Cancel), "Cancel")),
+	}
 }
 
 func mergeSlices(slices ...[]string) []string {
@@ -46,22 +48,24 @@ func mergeSlices(slices ...[]string) []string {
 	return out
 }
 
-var RepoKeys = RepositoriesKeyMap{
-	Add: key.NewBinding(key.WithKeys(DefaultConfig.Repository.Add...), key.WithHelp(formatHelp(DefaultConfig.Repository.Add), "Refresh")),
-	Delete: key.NewBinding(
-		key.WithKeys(DefaultConfig.Repository.Delete...),
-		key.WithHelp(formatHelp(DefaultConfig.Repository.Delete), "Delete repo"),
-	),
-	Move: key.NewBinding(
-		key.WithKeys(mergeSlices(DefaultConfig.Repository.Up, DefaultConfig.Repository.Down, DefaultConfig.Repository.Left, DefaultConfig.Repository.Right)...,
+func RepoKeys() RepositoriesKeyMap {
+	return RepositoriesKeyMap{
+		Add: key.NewBinding(key.WithKeys(DefaultConfig.Repository.Add...), key.WithHelp(formatHelp(DefaultConfig.Repository.Add), "Refresh")),
+		Delete: key.NewBinding(
+			key.WithKeys(DefaultConfig.Repository.Delete...),
+			key.WithHelp(formatHelp(DefaultConfig.Repository.Delete), "Delete repo"),
 		),
-		key.WithHelp(formatHelp(mergeSlices(DefaultConfig.Repository.Up, DefaultConfig.Repository.Down, DefaultConfig.Repository.Left, DefaultConfig.Repository.Right)), "Move")),
-	Refresh: key.NewBinding(key.WithKeys(DefaultConfig.Repository.Refresh...), key.WithHelp(formatHelp(DefaultConfig.Repository.Refresh), "Refresh")),
-	Select:  key.NewBinding(key.WithKeys(DefaultConfig.Repository.Select...), key.WithHelp(formatHelp(DefaultConfig.Repository.Select), "Select")),
-	Update:  key.NewBinding(key.WithKeys(DefaultConfig.Repository.Update...), key.WithHelp(formatHelp(DefaultConfig.Repository.Update), "Update repo")),
-	Install: key.NewBinding(key.WithKeys(DefaultConfig.Repository.Install...), key.WithHelp(formatHelp(DefaultConfig.Repository.Install), "Install version")),
-	Up:      key.NewBinding(key.WithKeys(DefaultConfig.Repository.Up...)),
-	Down:    key.NewBinding(key.WithKeys(DefaultConfig.Repository.Down...)),
-	Left:    key.NewBinding(key.WithKeys(DefaultConfig.Repository.Left...)),
-	Right:   key.NewBinding(key.WithKeys(DefaultConfig.Repository.Right...)),
+		Move: key.NewBinding(
+			key.WithKeys(mergeSlices(DefaultConfig.Repository.Up, DefaultConfig.Repository.Down, DefaultConfig.Repository.Left, DefaultConfig.Repository.Right)...,
+			),
+			key.WithHelp(formatHelp(mergeSlices(DefaultConfig.Repository.Up, DefaultConfig.Repository.Down, DefaultConfig.Repository.Left, DefaultConfig.Repository.Right)), "Move")),
+		Refresh: key.NewBinding(key.WithKeys(DefaultConfig.Repository.Refresh...), key.WithHelp(formatHelp(DefaultConfig.Repository.Refresh), "Refresh")),
+		Select:  key.NewBinding(key.WithKeys(DefaultConfig.Repository.Select...), key.WithHelp(formatHelp(DefaultConfig.Repository.Select), "Select")),
+		Update:  key.NewBinding(key.WithKeys(DefaultConfig.Repository.Update...), key.WithHelp(formatHelp(DefaultConfig.Repository.Update), "Update repo")),
+		Install: key.NewBinding(key.WithKeys(DefaultConfig.Repository.Install...), key.WithHelp(formatHelp(DefaultConfig.Repository.Install), "Install version")),
+		Up:      key.NewBinding(key.WithKeys(DefaultConfig.Repository.Up...)),
+		Down:    key.NewBinding(key.WithKeys(DefaultConfig.Repository.Down...)),
+		Left:    key.NewBinding(key.WithKeys(DefaultConfig.Repository.Left...)),
+		Right:   key.NewBinding(key.WithKeys(DefaultConfig.Repository.Right...)),
+	}
 }

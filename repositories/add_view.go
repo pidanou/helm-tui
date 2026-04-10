@@ -10,7 +10,7 @@ import (
 
 func (m AddModel) View() string {
 	helperStyle := m.help.Styles.ShortSeparator
-	helpView := m.help.View(m.keys) + helperStyle.Render(" • ") + m.help.View(keymaps.CommonKeysHelper)
+	helpView := m.help.View(m.keys) + helperStyle.Render(" • ") + m.help.View(keymaps.NewCommonKeysHelper())
 	var inputs string
 	for step := 0; step < len(m.Inputs); step++ {
 		if step == 0 {

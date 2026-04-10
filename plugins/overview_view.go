@@ -13,7 +13,7 @@ func (m PluginsModel) View() string {
 		remainingHeight -= 3
 	}
 	helperStyle := m.help.Styles.ShortSeparator
-	helpView := m.help.View(keymaps.PluginOverviewKeys) + helperStyle.Render(" • ") + m.help.View(keymaps.CommonKeysHelper)
+	helpView := m.help.View(keymaps.PluginOverviewKeys()) + helperStyle.Render(" • ") + m.help.View(keymaps.NewCommonKeysHelper())
 	view := components.RenderTable(m.pluginsTable, remainingHeight-3, m.width-2)
 	m.installPluginInput.Width = m.width - 5
 	if m.installPluginInput.Focused() {

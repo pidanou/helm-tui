@@ -35,7 +35,7 @@ func (m Model) View() string {
 	}
 
 	helperStyle := m.help.Styles.ShortSeparator
-	helpView := m.help.View(m.keys[m.selectedView]) + helperStyle.Render(" • ") + m.help.View(keymaps.CommonKeysHelper)
+	helpView := m.help.View(m.keys[m.selectedView]) + helperStyle.Render(" • ") + m.help.View(keymaps.NewCommonKeysHelper())
 	return view + "\n" + helpView
 }
 

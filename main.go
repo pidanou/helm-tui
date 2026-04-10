@@ -9,9 +9,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pidanou/helm-tui/helpers"
+	"github.com/pidanou/helm-tui/keymaps"
 )
 
 func main() {
+	initKeys()
 	f, err := tea.LogToFile("debug.log", "debug")
 	if err != nil {
 		fmt.Println("fatal:", err)
@@ -20,8 +22,6 @@ func main() {
 	helpers.LogFile = f
 	defer f.Close()
 	defer os.Truncate("debug.log", 0)
-
-	initKeys()
 
 	var tabs []string
 
@@ -38,31 +38,44 @@ func main() {
 }
 
 func initKeys() {
-	// Get the user's home directory (cross-platform)
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Println("Error getting home directory:", err)
-		os.Exit(1)
+		return
 	}
 
-	// Build the config file path
-	configPath := filepath.Join(homeDir, ".config", "helm-tui", "config")
+	configDir := filepath.Join(homeDir, ".config", "helm-tui")
+	configPath := filepath.Join(configDir, "config.json")
 
-	// Open the file
+	// 1. Ensure directory exists
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		fmt.Println("Error creating config directory:", err)
+		return
+	}
+
+	// 2. Check if there is a config
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return
+	}
+
+	// 3. Read + parse safely
 	file, err := os.Open(configPath)
 	if err != nil {
+		fmt.Println("Error opening config file:", err)
 		return
 	}
 	defer file.Close()
 
-	// Parse JSON
-	var config map[string]any
+	tmp := keymaps.DefaultConfig // start with defaults
+
 	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&config); err != nil {
-		fmt.Println("Error parsing JSON:", err)
-		os.Exit(1)
+	if err := decoder.Decode(&tmp); err != nil {
+		fmt.Println("Error parsing config, using defaults:", err)
+		return
 	}
 
-	// Print parsed result
-	fmt.Printf("Parsed config: %+v\n", config)
+	fmt.Println(keymaps.DefaultConfig)
+
+	// 4. Apply config
+	keymaps.DefaultConfig = tmp
 }

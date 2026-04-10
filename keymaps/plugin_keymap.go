@@ -10,12 +10,14 @@ type PluginKeyMap struct {
 	Refresh   key.Binding
 }
 
-var PluginOverviewKeys = PluginKeyMap{
-	Uninstall: key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Uninstall...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Update), "Uninstall")),
-	Install:   key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Install...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Install), "Install")),
-	Update:    key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Update...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Update), "Update")),
-	Cancel:    key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Cancel...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Cancel), "Cancel")),
-	Refresh:   key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Refresh...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Refresh), "Refresh")),
+func PluginOverviewKeys() PluginKeyMap {
+	return PluginKeyMap{
+		Uninstall: key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Uninstall...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Update), "Uninstall")),
+		Install:   key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Install...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Install), "Install")),
+		Update:    key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Update...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Update), "Update")),
+		Cancel:    key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Cancel...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Cancel), "Cancel")),
+		Refresh:   key.NewBinding(key.WithKeys(DefaultConfig.Plugin.Refresh...), key.WithHelp(formatHelp(DefaultConfig.Plugin.Refresh), "Refresh")),
+	}
 }
 
 func (k PluginKeyMap) ShortHelp() []key.Binding {

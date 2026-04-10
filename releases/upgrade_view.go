@@ -10,9 +10,9 @@ import (
 
 func (m UpgradeModel) View() string {
 	helperStyle := m.help.Styles.ShortSeparator
-	helpView := m.help.View(keymaps.ReleaseInstallKeys) + helperStyle.Render(" • ") + m.help.View(keymaps.CommonKeysHelper)
+	helpView := m.help.View(keymaps.ReleaseInstallKeys()) + helperStyle.Render(" • ") + m.help.View(keymaps.NewCommonKeysHelper())
 	if m.Inputs[upgradeReleaseChartStep].Focused() {
-		helpView = m.help.View(keymaps.CommonKeysHelper.Suggestion) + helperStyle.Render(" • ") + m.help.View(keymaps.CommonKeysHelper)
+		helpView = m.help.View(keymaps.NewCommonKeysHelper().Suggestion) + helperStyle.Render(" • ") + m.help.View(keymaps.NewCommonKeysHelper())
 	}
 	var Inputs string
 	for step := 0; step < len(m.Inputs); step++ {

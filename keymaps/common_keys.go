@@ -1,8 +1,6 @@
 package keymaps
 
 import (
-	"fmt"
-
 	"github.com/charmbracelet/bubbles/key"
 )
 
@@ -26,11 +24,13 @@ func (k CommonKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-var menuKeys = append(DefaultConfig.Common.MenuPrev, DefaultConfig.Common.MenuNext...)
-var CommonKeysHelper = CommonKeyMap{
-	MenuNext:   key.NewBinding(key.WithKeys(menuKeys...), key.WithHelp(fmt.Sprintf("%s/%s", formatHelp(DefaultConfig.Common.MenuPrev), formatHelp(DefaultConfig.Common.MenuNext)), "Change panel")),
-	Quit:       key.NewBinding(key.WithKeys(DefaultConfig.Common.Exit...), key.WithHelp(formatHelp(DefaultConfig.Common.Exit), "Quit")),
-	Suggestion: SuggestionInputKeyMap,
+func NewCommonKeysHelper() CommonKeyMap {
+	var menuKeys = append(DefaultConfig.Common.MenuPrev, DefaultConfig.Common.MenuNext...)
+	return CommonKeyMap{
+		MenuNext:   key.NewBinding(key.WithKeys(menuKeys...), key.WithHelp(formatHelp(menuKeys), "Change panel")),
+		Quit:       key.NewBinding(key.WithKeys(DefaultConfig.Common.Exit...), key.WithHelp(formatHelp(DefaultConfig.Common.Exit), "Quit")),
+		Suggestion: SuggestionInputKeyMap,
+	}
 }
 
 type SuggestionKeyMap struct {
