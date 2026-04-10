@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pidanou/helm-tui/helpers"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/types"
 )
 
@@ -35,7 +36,7 @@ type UpgradeModel struct {
 	width       int
 	height      int
 	help        help.Model
-	keys        keyMap
+	keys        keymaps.ReleaseKeyMap
 	tag         int
 }
 
@@ -45,7 +46,7 @@ func InitUpgradeModel() UpgradeModel {
 	value := textinput.New()
 	confirm := textinput.New()
 	inputs := []textinput.Model{chart, version, value, confirm}
-	m := UpgradeModel{upgradeStep: upgradeReleaseChartStep, Inputs: inputs, help: help.New(), keys: upgradeKeys}
+	m := UpgradeModel{upgradeStep: upgradeReleaseChartStep, Inputs: inputs, help: help.New(), keys: keymaps.ReleaseUpgradeKeys}
 	m.Inputs[upgradeReleaseChartStep].ShowSuggestions = true
 	m.Inputs[upgradeReleaseVersionStep].ShowSuggestions = true
 	return m

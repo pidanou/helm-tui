@@ -1,8 +1,8 @@
-package plugins
+package keymaps
 
 import "github.com/charmbracelet/bubbles/key"
 
-type keyMap struct {
+type PluginKeyMap struct {
 	Install   key.Binding
 	Update    key.Binding
 	Uninstall key.Binding
@@ -10,7 +10,7 @@ type keyMap struct {
 	Refresh   key.Binding
 }
 
-var overviewKeys = keyMap{
+var PluginOverviewKeys = PluginKeyMap{
 	Uninstall: key.NewBinding(key.WithKeys("U"), key.WithHelp("U", "Uninstall")),
 	Install:   key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install")),
 	Update:    key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Update")),
@@ -18,12 +18,12 @@ var overviewKeys = keyMap{
 	Refresh:   key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "Refresh")),
 }
 
-func (k keyMap) ShortHelp() []key.Binding {
+func (k PluginKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Update, k.Install, k.Uninstall, k.Refresh, k.Cancel}
 }
 
 // FullHelp returns keybindings for the expanded help view. It's part of the
 // key.Map interface.
-func (k keyMap) FullHelp() [][]key.Binding {
+func (k PluginKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }

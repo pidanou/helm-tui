@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pidanou/helm-tui/helpers"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/types"
 )
 
@@ -32,7 +33,7 @@ type InstallModel struct {
 	width       int
 	height      int
 	help        help.Model
-	keys        keyMap
+	keys        keymaps.RepositoriesKeyMap
 }
 
 func InitInstallModel(chart, version string) InstallModel {
@@ -41,7 +42,7 @@ func InitInstallModel(chart, version string) InstallModel {
 	value := textinput.New()
 	confirm := textinput.New()
 	inputs := []textinput.Model{name, namespace, value, confirm}
-	m := InstallModel{installStep: nameStep, Inputs: inputs, help: help.New(), Chart: chart, Version: version, keys: installKeys}
+	m := InstallModel{installStep: nameStep, Inputs: inputs, help: help.New(), Chart: chart, Version: version, keys: keymaps.RepositoriesInstallKeys}
 	return m
 }
 

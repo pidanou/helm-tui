@@ -1,12 +1,10 @@
-package releases
+package keymaps
 
-import (
-	"github.com/charmbracelet/bubbles/key"
-)
+import "github.com/charmbracelet/bubbles/key"
 
 // keyMap defines a set of keybindings. To work for help it must satisfy
 // key.Map. It could also very easily be a map[string]key.Binding.
-type keyMap struct {
+type ReleaseKeyMap struct {
 	Install   key.Binding
 	Delete    key.Binding
 	Rollback  key.Binding
@@ -20,17 +18,17 @@ type keyMap struct {
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
 // of the key.Map interface.
-func (k keyMap) ShortHelp() []key.Binding {
+func (k ReleaseKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Install, k.Delete, k.Upgrade, k.Select, k.Refresh, k.Rollback, k.ChangeTab, k.Cancel, k.Back}
 }
 
 // FullHelp returns keybindings for the expanded help view. It's part of the
 // key.Map interface.
-func (k keyMap) FullHelp() [][]key.Binding {
+func (k ReleaseKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-var releasesKeys = keyMap{
+var releasesKeys = ReleaseKeyMap{
 	Install: key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install new release")),
 	Delete: key.NewBinding(
 		key.WithKeys("D"),
@@ -41,7 +39,7 @@ var releasesKeys = keyMap{
 	Upgrade: key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "Upgrade release")),
 }
 
-var historyKeys = keyMap{
+var historyKeys = ReleaseKeyMap{
 	Install:  key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install new release")),
 	Rollback: key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "Rollback to revision")),
 	Delete: key.NewBinding(
@@ -53,7 +51,7 @@ var historyKeys = keyMap{
 	Back:      key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Back")),
 }
 
-var readOnlyKeys = keyMap{
+var readOnlyKeys = ReleaseKeyMap{
 	Install: key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "Install new release")),
 	Delete: key.NewBinding(
 		key.WithKeys("D"),
@@ -64,6 +62,14 @@ var readOnlyKeys = keyMap{
 	Back:      key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Back")),
 }
 
-func generateKeys() []keyMap {
-	return []keyMap{releasesKeys, historyKeys, readOnlyKeys, readOnlyKeys, readOnlyKeys, readOnlyKeys, readOnlyKeys}
+func GenerateReleaseKeys() []ReleaseKeyMap {
+	return []ReleaseKeyMap{releasesKeys, historyKeys, readOnlyKeys, readOnlyKeys, readOnlyKeys, readOnlyKeys, readOnlyKeys}
+}
+
+var ReleaseInstallKeys = ReleaseKeyMap{
+	Cancel: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
+}
+
+var ReleaseUpgradeKeys = ReleaseKeyMap{
+	Cancel: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "Cancel")),
 }

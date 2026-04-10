@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/pidanou/helm-tui/helpers"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/styles"
 )
 
@@ -47,5 +48,5 @@ func (m Model) renderDefaultValueView() string {
 	baseStyle := styles.InactiveStyle.Border(styles.Border, false, true, true)
 	helperStyle := m.help.Styles.ShortSeparator
 	helpView := helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
-	return lipgloss.JoinVertical(lipgloss.Top, defaultValueTopBorder, baseStyle.Render(m.defaultValueVP.View()), m.help.View(defaultValuesKeyHelp)+helpView)
+	return lipgloss.JoinVertical(lipgloss.Top, defaultValueTopBorder, baseStyle.Render(m.defaultValueVP.View()), m.help.View(keymaps.RespotioriesDefaultValuesKeyHelp)+helpView)
 }

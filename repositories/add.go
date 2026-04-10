@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/pidanou/helm-tui/keymaps"
 )
 
 const (
@@ -22,14 +23,14 @@ type AddModel struct {
 	width   int
 	height  int
 	help    help.Model
-	keys    keyMap
+	keys    keymaps.RepositoriesKeyMap
 }
 
 func InitAddModel() AddModel {
 	repoName := textinput.New()
 	url := textinput.New()
 	inputs := []textinput.Model{repoName, url}
-	m := AddModel{addStep: repoNameStep, Inputs: inputs, help: help.New(), keys: addKeys}
+	m := AddModel{addStep: repoNameStep, Inputs: inputs, help: help.New(), keys: keymaps.RepositoriesAddKeys}
 	return m
 }
 

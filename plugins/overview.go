@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pidanou/helm-tui/components"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/types"
 )
 
@@ -20,7 +21,7 @@ type PluginsModel struct {
 	pluginsTable       table.Model
 	installPluginInput textinput.Model
 	help               help.Model
-	keys               keyMap
+	keys               keymaps.PluginKeyMap
 	width              int
 	height             int
 }
@@ -29,7 +30,7 @@ func InitModel() PluginsModel {
 	table := components.GenerateTable()
 	input := textinput.New()
 	input.Placeholder = "Enter plugin path/url"
-	return PluginsModel{pluginsTable: table, help: help.New(), keys: overviewKeys, installPluginInput: input}
+	return PluginsModel{pluginsTable: table, help: help.New(), keys: keymaps.PluginOverviewKeys, installPluginInput: input}
 }
 
 func (m PluginsModel) Init() tea.Cmd {

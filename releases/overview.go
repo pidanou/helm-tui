@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pidanou/helm-tui/components"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/types"
 )
 
@@ -23,7 +24,7 @@ const (
 
 type Model struct {
 	selectedView selectedView
-	keys         []keyMap
+	keys         []keymaps.ReleaseKeyMap
 	help         help.Model
 	releaseTable table.Model
 	historyTable table.Model
@@ -73,7 +74,7 @@ var releaseTableCache table.Model
 
 func InitModel() (Model, tea.Cmd) {
 	table := components.GenerateTable()
-	k := generateKeys()
+	k := keymaps.GenerateReleaseKeys()
 	m := Model{releaseTable: table, historyTable: table, help: help.New(), keys: k, upgrading: false,
 		installModel: InitInstallModel(), installing: false, upgradeModel: InitUpgradeModel(), deleting: false,
 	}

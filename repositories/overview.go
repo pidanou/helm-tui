@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pidanou/helm-tui/components"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/types"
 )
 
@@ -20,7 +21,7 @@ const (
 
 type Model struct {
 	selectedView     selectedView
-	keys             []keyMap
+	keys             []keymaps.RepositoriesKeyMap
 	tables           []table.Model
 	installModel     InstallModel
 	addModel         AddModel
@@ -57,7 +58,7 @@ func InitModel() (tea.Model, tea.Cmd) {
 	repoTable.Focus()
 	tables = append(tables, repoTable, tablePackagesView, tableVersionsView)
 	repoTable.Focus()
-	keys := generateKeys()
+	keys := keymaps.GenerateRepositoriesKeys()
 	m := Model{
 		tables:           tables,
 		selectedView:     listView,
