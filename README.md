@@ -50,7 +50,7 @@ go install github.com/pidanou/helm-tui@latest
 
 Once installed, you can run `helm-tui` directly from your terminal.
 
-## How to Install
+## How to change keymaps
 Helm-tui can be customized using a local configuration file that defines keybindings and UI behavior.
 
 On first run, the application automatically creates a default configuration file at:
