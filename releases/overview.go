@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pidanou/helm-tui/components"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/types"
 )
 
@@ -23,7 +24,7 @@ const (
 
 type Model struct {
 	selectedView selectedView
-	keys         []keyMap
+	keys         []keymaps.ReleaseKeyMap
 	help         help.Model
 	releaseTable table.Model
 	historyTable table.Model
@@ -73,7 +74,7 @@ var releaseTableCache table.Model
 
 func InitModel() (Model, tea.Cmd) {
 	table := components.GenerateTable()
-	k := generateKeys()
+	k := keymaps.GenerateReleaseKeys()
 	m := Model{releaseTable: table, historyTable: table, help: help.New(), keys: k, upgrading: false,
 		installModel: InitInstallModel(), installing: false, upgradeModel: InitUpgradeModel(), deleting: false,
 	}
@@ -90,11 +91,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	if m.installing {
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			if msg.String() == "esc" {
-				m.installing = false
-			}
+		switch msg.(type) {
 		case types.InstallMsg:
 			m.installing = false
 			cmds = append(cmds, m.list)
@@ -104,11 +101,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	}
 	if m.upgrading {
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			if msg.String() == "esc" {
-				m.upgrading = false
-			}
+		switch msg.(type) {
 		case types.UpgradeMsg:
 			m.upgrading = false
 			cmds = append(cmds, m.list)
@@ -214,32 +207,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.list)
 
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "i":
+		switch {
+		case keymaps.Contains(keymaps.DefaultConfig.Release.Install, msg.String()):
 			m.installing = true
 			cmd = m.installModel.Init()
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
-		case "r":
+		case keymaps.Contains(keymaps.DefaultConfig.Release.Refresh, msg.String()):
 			switch m.selectedView {
 			case releasesView:
 				cmds = append(cmds, m.list)
 			}
-		case "R":
+		case keymaps.Contains(keymaps.DefaultConfig.Release.Rollback, msg.String()):
 			switch m.selectedView {
 			case historyView:
 				return m, m.rollback
 			}
-		case "D":
+		case keymaps.Contains(keymaps.DefaultConfig.Release.Delete, msg.String()):
 			m.deleting = true
-		case "u":
+		case keymaps.Contains(keymaps.DefaultConfig.Release.Upgrade, msg.String()):
 			m.upgrading = true
 			m.upgradeModel.ReleaseName = m.releaseTable.SelectedRow()[0]
 			m.upgradeModel.Namespace = m.releaseTable.SelectedRow()[1]
 			cmd = m.upgradeModel.Init()
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
-		case "esc":
+		case keymaps.Contains(keymaps.DefaultConfig.Release.Back, msg.String()):
 			m.installing = false
 			m.upgrading = false
 			switch m.selectedView {
@@ -250,7 +243,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.historyTable.Blur()
 				m.releaseTable = releaseTableCache
 			}
-		case "enter", " ":
+		case keymaps.Contains(keymaps.DefaultConfig.Release.Select, msg.String()):
 			switch m.selectedView {
 			case releasesView:
 				m.selectedView = historyView
@@ -261,7 +254,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.historyTable.Focus()
 				cmds = append(cmds, m.history, m.getNotes, m.getMetadata, m.getHooks, m.getValues, m.getManifest)
 			}
-		case "l", "right":
+		case keymaps.Contains(keymaps.DefaultConfig.Release.NextTab, msg.String()):
 			switch m.selectedView {
 			case releasesView:
 			case manifestView:
@@ -269,7 +262,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			default:
 				m.selectedView++
 			}
-		case "h", "left":
+		case keymaps.Contains(keymaps.DefaultConfig.Release.PrevTab, msg.String()):
 			switch m.selectedView {
 			case releasesView:
 			case historyView:

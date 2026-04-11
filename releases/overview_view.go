@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/pidanou/helm-tui/helpers"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/styles"
 )
 
@@ -18,7 +18,7 @@ func (m Model) View() string {
 		return m.upgradeModel.View()
 	}
 	if m.deleting {
-		confirmMsg := "  No release selected. Press n to go back  "
+		confirmMsg := "  No release selected.  "
 		if m.releaseTable.SelectedRow() != nil {
 			confirmMsg = fmt.Sprintf("  Delete release %s? y/n  ", m.releaseTable.SelectedRow()[0])
 		}
@@ -35,7 +35,7 @@ func (m Model) View() string {
 	}
 
 	helperStyle := m.help.Styles.ShortSeparator
-	helpView := m.help.View(m.keys[m.selectedView]) + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
+	helpView := m.help.View(m.keys[m.selectedView]) + helperStyle.Render(" • ") + m.help.View(keymaps.NewCommonKeysHelper())
 	return view + "\n" + helpView
 }
 

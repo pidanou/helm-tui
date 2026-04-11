@@ -3,12 +3,12 @@ package repositories
 import (
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/pidanou/helm-tui/helpers"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/styles"
 )
 
 func (m Model) View() string {
-	helpView := m.help.View(m.keys[m.selectedView])
+	helpView := m.help.View(keymaps.RepoKeys())
 	repoView := m.renderTable(m.tables[listView], " Repositories ", m.selectedView == listView)
 	packagesView := m.renderTable(m.tables[packagesView], " Packages ", m.selectedView == packagesView)
 	versionsView := m.renderTable(m.tables[versionsView], " Versions ", m.selectedView == versionsView)
@@ -23,7 +23,7 @@ func (m Model) View() string {
 		return m.renderDefaultValueView()
 	}
 	helperStyle := m.help.Styles.ShortSeparator
-	return view + "\n" + helpView + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
+	return view + "\n" + helpView + helperStyle.Render(" • ") + m.help.View(keymaps.NewCommonKeysHelper())
 }
 
 func (m Model) renderTable(table table.Model, title string, active bool) string {
@@ -46,6 +46,6 @@ func (m Model) renderDefaultValueView() string {
 	defaultValueTopBorder := styles.GenerateTopBorderWithTitle(" Default Values ", m.defaultValueVP.Width, styles.Border, styles.InactiveStyle)
 	baseStyle := styles.InactiveStyle.Border(styles.Border, false, true, true)
 	helperStyle := m.help.Styles.ShortSeparator
-	helpView := helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
-	return lipgloss.JoinVertical(lipgloss.Top, defaultValueTopBorder, baseStyle.Render(m.defaultValueVP.View()), m.help.View(defaultValuesKeyHelp)+helpView)
+	helpView := helperStyle.Render(" • ") + m.help.View(keymaps.NewCommonKeysHelper())
+	return lipgloss.JoinVertical(lipgloss.Top, defaultValueTopBorder, baseStyle.Render(m.defaultValueVP.View()), m.help.View(keymaps.RepositoriesDefaultValuesKeyHelp())+helpView)
 }

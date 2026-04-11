@@ -2,7 +2,7 @@ package hub
 
 import (
 	"github.com/charmbracelet/lipgloss"
-	"github.com/pidanou/helm-tui/helpers"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/styles"
 )
 
@@ -21,17 +21,17 @@ func (m HubModel) View() string {
 		header = styles.ActiveStyle.Border(styles.Border).Render(m.searchBar.View())
 	}
 	helperStyle := m.help.Styles.ShortSeparator
-	helpView := m.help.View(defaultKeysHelp)
+	helpView := m.help.View(keymaps.HubDefaultKeysHelp())
 	if m.searchBar.Focused() {
-		helpView = m.help.View(searchKeyHelp)
+		helpView = m.help.View(keymaps.HubSearchFocusedKeyHelp())
 	}
 	if m.resultTable.Focused() {
-		helpView = m.help.View(tableKeysHelp)
+		helpView = m.help.View(keymaps.HubTableFocusedKeysHelp())
 	}
 	if m.repoAddInput.Focused() {
-		helpView = m.help.View(addRepoKeyHelp)
+		helpView = m.help.View(keymaps.HubAddRepoFocusedKeyHelp())
 	}
-	helpView += helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
+	helpView += helperStyle.Render(" • ") + m.help.View(keymaps.NewCommonKeysHelper())
 	style := styles.ActiveStyle.Border(styles.Border)
 	if m.repoAddInput.Focused() {
 		return header + "\n" + m.renderSearchTableView() + "\n" + style.Render(m.repoAddInput.View()) + "\n" + helpView
@@ -57,6 +57,6 @@ func (m HubModel) renderDefaultValueView() string {
 	defaultValueTopBorder := styles.GenerateTopBorderWithTitle(" Default Values ", m.defaultValueVP.Width, styles.Border, styles.InactiveStyle)
 	baseStyle := styles.InactiveStyle.Border(styles.Border, false, true, true)
 	helperStyle := m.help.Styles.ShortSeparator
-	helpView := helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
-	return lipgloss.JoinVertical(lipgloss.Top, defaultValueTopBorder, baseStyle.Render(m.defaultValueVP.View()), m.help.View(defaultValuesKeyHelp)+helpView)
+	helpView := helperStyle.Render(" • ") + m.help.View(keymaps.NewCommonKeysHelper())
+	return lipgloss.JoinVertical(lipgloss.Top, defaultValueTopBorder, baseStyle.Render(m.defaultValueVP.View()), m.help.View(keymaps.HubPackageDefaultValueKeyHelp())+helpView)
 }

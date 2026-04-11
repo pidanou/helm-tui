@@ -1,7 +1,7 @@
 name: "tui"
 # Version is the version of Helm plus the number of official builds for this
 # plugin
-version: "0.5.0"
+version: "0.6.0"
 usage: "Simple terminal UI for Helm"
 description: "Simple terminal UI for Helm"
 useTunnel: true

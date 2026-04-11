@@ -1,0 +1,6 @@
+- `default_configuration.go` reads the config file and setup and the keys.
+- Keys are then injected in each keymap files **ONLY** for the help menu. The actions are evaluated directly from `default_configuration.go > DefaultConfig`
+- For each screen, different views might require different keys, which induces a change in the helper menu.
+- To handle that, each keymap can handle multiple setups. The ShortHelp and FullHelp shows what to be displayed and what not.
+- For more complex screens, keymaps are passed to the root screen as an array, so that the root screen can change the help menu depending on the active view. Array order is important as the root screen tracks the active view using an index.
+- The app then reads each setup depending on what is focused. 

@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pidanou/helm-tui/components"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/types"
 )
 
@@ -20,7 +21,6 @@ const (
 
 type Model struct {
 	selectedView     selectedView
-	keys             []keyMap
 	tables           []table.Model
 	installModel     InstallModel
 	addModel         AddModel
@@ -57,11 +57,9 @@ func InitModel() (tea.Model, tea.Cmd) {
 	repoTable.Focus()
 	tables = append(tables, repoTable, tablePackagesView, tableVersionsView)
 	repoTable.Focus()
-	keys := generateKeys()
 	m := Model{
 		tables:           tables,
 		selectedView:     listView,
-		keys:             keys,
 		installModel:     InitInstallModel("", ""),
 		addModel:         InitAddModel(),
 		help:             help.New(),
@@ -83,7 +81,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.installing {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
-			if msg.String() == "esc" {
+			if keymaps.Contains(keymaps.DefaultConfig.Repository.Cancel, msg.String()) {
 				m.installing = false
 				m.installModel, cmd = m.installModel.Update(msg)
 				cmds = append(cmds, cmd)
@@ -100,7 +98,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.adding {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
-			if msg.String() == "esc" {
+			if keymaps.Contains(keymaps.DefaultConfig.Repository.Cancel, msg.String()) {
 				m.adding = false
 				m.addModel, cmd = m.addModel.Update(msg)
 				cmds = append(cmds, cmd)
@@ -129,11 +127,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case types.ListRepoMsg:
 		m.tables[listView].SetRows(msg.Content)
 		m.tables[listView], cmd = m.tables[listView].Update(msg)
-		cmds = append(cmds, cmd, m.searchPackages)
+		cmds = append(cmds, cmd)
 	case types.PackagesMsg:
 		m.tables[packagesView].SetRows(msg.Content)
 		m.tables[packagesView], cmd = m.tables[packagesView].Update(msg)
-		cmds = append(cmds, cmd, m.searchPackageVersions)
+		cmds = append(cmds, cmd)
 	case types.PackageVersionsMsg:
 		m.tables[versionsView].SetRows(msg.Content)
 		m.tables[versionsView], cmd = m.tables[versionsView].Update(msg)
@@ -154,8 +152,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// handle key presses
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "i":
+		switch {
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.Install, msg.String()):
 			if m.tables[packagesView].SelectedRow() != nil && m.tables[versionsView].SelectedRow() != nil {
 				m.installModel.Chart = m.tables[packagesView].SelectedRow()[0]
 				m.installModel.Version = m.tables[versionsView].SelectedRow()[0]
@@ -163,41 +161,41 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd = m.installModel.Init()
 				return m, cmd
 			}
-		case "a":
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.Add, msg.String()):
 			m.adding = true
 			cmd = m.addModel.Init()
 			return m, cmd
-		case "v":
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.ShowPackageDefaultValues, msg.String()):
 			m.showDefaultValue = true
 			return m, m.getDefaultValue
-		case "down", "up", "j", "k":
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.Select, msg.String()):
 			switch m.selectedView {
 			case listView:
 				cmds = append(cmds, m.searchPackages)
 			case packagesView:
 				cmds = append(cmds, m.searchPackageVersions)
 			}
-		case "l", "right":
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.Right, msg.String()):
 			switch m.selectedView {
 			case versionsView:
 			default:
 				m.selectedView++
 			}
 			m.FocusOnlyTable(m.selectedView)
-		case "D":
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.Delete, msg.String()):
 			cmds = append(cmds, m.remove)
-		case "h", "left":
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.Left, msg.String()):
 			switch m.selectedView {
 			case listView:
 			default:
 				m.selectedView--
 			}
 			m.FocusOnlyTable(m.selectedView)
-		case "u":
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.Update, msg.String()):
 			return m, m.update
-		case "r":
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.Refresh, msg.String()):
 			return m, m.list
-		case "esc":
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.Cancel, msg.String()):
 			m.installing = false
 			m.adding = false
 			m.showDefaultValue = false

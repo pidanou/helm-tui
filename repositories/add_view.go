@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/pidanou/helm-tui/helpers"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/styles"
 )
 
 func (m AddModel) View() string {
 	helperStyle := m.help.Styles.ShortSeparator
-	helpView := m.help.View(m.keys) + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
+	helpView := m.help.View(m.keys) + helperStyle.Render(" • ") + m.help.View(keymaps.NewCommonKeysHelper())
 	var inputs string
 	for step := 0; step < len(m.Inputs); step++ {
 		if step == 0 {

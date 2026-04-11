@@ -50,6 +50,18 @@ go install github.com/pidanou/helm-tui@latest
 
 Once installed, you can run `helm-tui` directly from your terminal.
 
+## How to change keymaps
+Helm-tui can be customized using a local configuration file that defines keybindings and UI behavior.
+
+On first run, the application automatically creates a default configuration file at:
+```
+~/.config/helm-tui/config.json
+```
+
+The default config file is available `default_config.json`.
+After modifying the config file, simply restart to apply changes.
+If the configuration is invalid or missing fields, the plugin will automatically fall back to default settings.
+
 ## Contributing
 
 Contributions are welcome! If you find bugs or have feature requests, feel free to open an issue or submit a pull request.

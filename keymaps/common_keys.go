@@ -1,4 +1,4 @@
-package helpers
+package keymaps
 
 import (
 	"github.com/charmbracelet/bubbles/key"
@@ -6,26 +6,31 @@ import (
 
 // keyMap defines a set of keybindings. To work for help it must satisfy
 // key.Map. It could also very easily be a map[string]key.Binding.
-type keyMap struct {
-	MenuNext key.Binding
-	Quit     key.Binding
+type CommonKeyMap struct {
+	MenuNext   key.Binding
+	Quit       key.Binding
+	Suggestion SuggestionKeyMap
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
 // of the key.Map interface.
-func (k keyMap) ShortHelp() []key.Binding {
+func (k CommonKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.MenuNext, k.Quit}
 }
 
 // FullHelp returns keybindings for the expanded help view. It's part of the
 // key.Map interface.
-func (k keyMap) FullHelp() [][]key.Binding {
+func (k CommonKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-var CommonKeys = keyMap{
-	MenuNext: key.NewBinding(key.WithKeys("[", "]"), key.WithHelp("[/]", "Change panel")),
-	Quit:     key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "Quit")),
+func NewCommonKeysHelper() CommonKeyMap {
+	var menuKeys = append(DefaultConfig.Common.MenuPrev, DefaultConfig.Common.MenuNext...)
+	return CommonKeyMap{
+		MenuNext:   key.NewBinding(key.WithKeys(menuKeys...), key.WithHelp(formatHelp(menuKeys), "Change panel")),
+		Quit:       key.NewBinding(key.WithKeys(DefaultConfig.Common.Exit...), key.WithHelp(formatHelp(DefaultConfig.Common.Exit), "Quit")),
+		Suggestion: SuggestionInputKeyMap,
+	}
 }
 
 type SuggestionKeyMap struct {

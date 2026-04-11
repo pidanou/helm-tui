@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/pidanou/helm-tui/helpers"
 	"github.com/pidanou/helm-tui/hub"
+	"github.com/pidanou/helm-tui/keymaps"
 	"github.com/pidanou/helm-tui/plugins"
 	"github.com/pidanou/helm-tui/releases"
 	"github.com/pidanou/helm-tui/repositories"
@@ -85,15 +86,18 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c":
+		}
+		if keymaps.Contains(keymaps.DefaultConfig.Common.Exit, msg.String()) {
 			return m, tea.Quit
-		case "]":
+		}
+		if keymaps.Contains(keymaps.DefaultConfig.Common.MenuNext, msg.String()) {
 			if m.state == pluginsTab {
 				m.state = 0
 			} else {
 				m.state++
 			}
-		case "[":
+		}
+		if keymaps.Contains(keymaps.DefaultConfig.Common.MenuPrev, msg.String()) {
 			if m.state == releasesTab {
 				m.state = pluginsTab
 			} else {

@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/pidanou/helm-tui/keymaps"
 )
 
 const (
@@ -22,14 +23,14 @@ type AddModel struct {
 	width   int
 	height  int
 	help    help.Model
-	keys    keyMap
+	keys    keymaps.RepositoriesKeyMap
 }
 
 func InitAddModel() AddModel {
 	repoName := textinput.New()
 	url := textinput.New()
 	inputs := []textinput.Model{repoName, url}
-	m := AddModel{addStep: repoNameStep, Inputs: inputs, help: help.New(), keys: addKeys}
+	m := AddModel{addStep: repoNameStep, Inputs: inputs, help: help.New()}
 	return m
 }
 
@@ -48,8 +49,8 @@ func (m AddModel) Update(msg tea.Msg) (AddModel, tea.Cmd) {
 		m.Inputs[repoNameStep].Width = msg.Width - 5 - len(inputsHelper[0])
 		m.Inputs[urlStep].Width = msg.Width - 5 - len(inputsHelper[1])
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "enter":
+		switch {
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.NextStep, msg.String()):
 			if m.addStep == urlStep {
 				cmds = append(cmds, m.addRepo(m.Inputs[repoNameStep].Value(), m.Inputs[urlStep].Value()))
 				cmd = m.resetAllInputs()
@@ -72,7 +73,7 @@ func (m AddModel) Update(msg tea.Msg) (AddModel, tea.Cmd) {
 			}
 
 			return m, tea.Batch(cmds...)
-		case "esc":
+		case keymaps.Contains(keymaps.DefaultConfig.Repository.Cancel, msg.String()):
 			m.addStep = 0
 			for i := 0; i <= len(m.Inputs)-1; i++ {
 				m.Inputs[i].Blur()
